@@ -658,23 +658,24 @@ td.bold { font-weight: 600; color: var(--text); }
 <div class="panel active" id="panel-sales">
   <div class="err-banner" id="err-sales"></div>
 
-  <div class="sec">📊 Sales Overview — Last 3 Months</div>
+  <div class="sec">📊 Sales Overview — Last 12 Months</div>
   <div class="g5" id="sales-kpis">
-    <div class="kpi gold"><div class="kpi-label">Orders (3 months)</div><div class="kpi-val" id="k-total"><div class="skel"></div></div><div class="kpi-sub">last 90 days</div></div>
+    <div class="kpi gold"><div class="kpi-label">Orders (12 months)</div><div class="kpi-val" id="k-total"><div class="skel"></div></div><div class="kpi-sub">last 12 months</div></div>
     <div class="kpi blue"><div class="kpi-label">Open Orders</div><div class="kpi-val" id="k-open"><div class="skel"></div></div><div class="kpi-sub">active / pending</div></div>
-    <div class="kpi purple"><div class="kpi-label">Dispatched</div><div class="kpi-val" id="k-disp"><div class="skel"></div></div><div class="kpi-sub">last 3 months</div></div>
+    <div class="kpi purple"><div class="kpi-label">Dispatched</div><div class="kpi-val" id="k-disp"><div class="skel"></div></div><div class="kpi-sub">last 12 months</div></div>
     <div class="kpi green"><div class="kpi-label">Avg Delivery</div><div class="kpi-val" id="k-del"><div class="skel"></div></div><div class="kpi-sub">days order→dispatch</div></div>
     <div class="kpi teal"><div class="kpi-label">Customers</div><div class="kpi-val" id="k-cust"><div class="skel"></div></div><div class="kpi-sub">in system</div></div>
   </div>
 
-  <div class="sec">📋 Orders — Last 3 Months (Newest First)</div>
+  <div class="sec">📋 Orders — Last 12 Months (Newest First)</div>
   <div class="search-wrap">
     <input class="search-input" id="search-orders" placeholder="Search order ID, customer, product, status…" oninput="filterOrders()">
     <select id="filter-status" onchange="filterOrders()" style="background:#fff;border:1.5px solid #e2e4e9;color:#374151;padding:8px 12px;border-radius:6px;font-size:12px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;outline:none;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04);">
       <option value="">All Status</option>
-      <option value="open">Open</option>
-      <option value="dispatch">Dispatched</option>
-      <option value="pending">Pending</option>
+      <option value="In Process">In Process</option>
+      <option value="Completed">Completed</option>
+      <option value="On hold">On hold</option>
+      <option value="Cancelled">Cancelled</option>
     </select>
   </div>
   <div class="tcard">
@@ -706,7 +707,7 @@ td.bold { font-weight: 600; color: var(--text); }
       </div>
     </div>
     <div>
-      <div class="sec">👥 Top Customers (3 months)</div>
+      <div class="sec">👥 Top Customers (12 months)</div>
       <div class="tcard">
         <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">By Order Count</span></div></div>
         <div class="bars" id="cust-bars"><div class="no-data">Loading…</div></div>
@@ -731,21 +732,23 @@ td.bold { font-weight: 600; color: var(--text); }
 
   <div class="sec">🚚 QC Records — Items to Check</div>
   <div class="search-wrap">
-    <input class="search-input" id="search-qc" placeholder="Search order ID, invoice…" oninput="filterQC()">
+    <input class="search-input" id="search-qc" placeholder="Search order ID, customer, invoice…" oninput="filterQC()">
   </div>
   <div class="tcard">
     <div class="tcard-hdr">
       <div class="tcard-hdr-left">
-        <span class="tcard-title">QC Entries</span>
+        <span class="tcard-title">QC Entries — Last 12 Months</span>
         <span class="tcard-count" id="qc-count">—</span>
       </div>
     </div>
+    <div style="overflow-x:auto">
     <table>
       <thead><tr>
-        <th>Order ID</th><th>Dispatch Date</th><th>SB Invoice</th><th>QC Result</th><th>Days to Dispatch</th>
+        <th>Order ID</th><th>Customer</th><th>Order Date</th><th>Dispatch Date</th><th>SB Invoice</th><th>Items</th><th>QC Result</th><th>Days</th>
       </tr></thead>
-      <tbody id="qc-tbody"><tr><td colspan="5" class="no-data">Loading…</td></tr></tbody>
+      <tbody id="qc-tbody"><tr><td colspan="8" class="no-data">Loading…</td></tr></tbody>
     </table>
+    </div>
   </div>
 
   <div class="sec">📊 Dispatch Performance</div>
@@ -785,7 +788,7 @@ td.bold { font-weight: 600; color: var(--text); }
     </div>
     <table>
       <thead><tr>
-        <th>Barcode</th><th>Date/Time</th><th>Material</th><th>Supplier</th><th>Batch No</th><th>Shelf</th><th>Qty</th>
+        <th>Barcode</th><th>Date/Time</th><th>Supplier</th><th>Batch No</th><th>Shelf</th><th></th><th>Qty</th>
       </tr></thead>
       <tbody id="rm-in-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
     </table>
@@ -949,15 +952,15 @@ td.bold { font-weight: 600; color: var(--text); }
   <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Type an invoice number (SB Invoice) or order ID to trace the full lifecycle — order details, dispatch, QC, and raw material used.</p>
 
   <div class="search-wrap" style="margin-bottom:0">
-    <input class="search-input" id="trace-input" placeholder="Type SB Invoice (e.g. INV-441) or Order ID (e.g. SB-2903)…" oninput="runTrace()" style="font-size:14px;padding:12px 16px;background:#fff;">
+    <input class="search-input" id="trace-input" placeholder="Type Invoice number, Order ID or Customer name…" oninput="runTrace()" style="font-size:14px;padding:12px 16px;background:#fff;">
     <button class="btn-refresh" onclick="clearTrace()" style="height:44px;padding:0 16px">✕ Clear</button>
   </div>
 
   <div id="trace-results" style="margin-top:20px">
     <div style="text-align:center;padding:48px;color:var(--muted)">
       <div style="font-size:32px;margin-bottom:12px">🔬</div>
-      <div style="font-size:14px;font-weight:600;color:var(--dim)">Enter an invoice or order ID above</div>
-      <div style="font-size:12px;margin-top:6px">Results will appear instantly as you type</div>
+      <div style="font-size:14px;font-weight:600;color:var(--dim)">Search by invoice, order ID or customer name</div>
+      <div style="font-size:12px;margin-top:6px">Results appear instantly as you type</div>
     </div>
   </div>
 </div>
@@ -1012,16 +1015,15 @@ const f  = v  => (v === null || v === undefined || v === '') ? '—' : String(v)
 const today = () => new Date().toISOString().slice(0,10);
 
 function statusPill(s) {
-  const v = String(s||'').toLowerCase();
-  if (v.includes('dispatch') || v.includes('done') || v.includes('complete'))
-    return `<span class="pill pill-dispatch">${s}</span>`;
-  if (v.includes('open') || v.includes('active') || v.includes('progress'))
-    return `<span class="pill pill-open">${s}</span>`;
-  if (v.includes('pending') || v.includes('hold'))
-    return `<span class="pill pill-pending">${s}</span>`;
-  if (v.includes('pass'))  return `<span class="pill pill-pass">Pass</span>`;
-  if (v.includes('fail'))  return `<span class="pill pill-fail">Fail</span>`;
-  return `<span class="pill pill-open">${s||'Open'}</span>`;
+  const v = String(s||'').trim();
+  if (v === 'Completed')  return `<span class="pill pill-dispatch">Completed</span>`;
+  if (v === 'In Process') return `<span class="pill pill-open">In Process</span>`;
+  if (v === 'On hold')    return `<span class="pill pill-pending">On Hold</span>`;
+  if (v === 'Cancelled')  return `<span class="pill pill-fail">Cancelled</span>`;
+  // fallbacks
+  if (v.toLowerCase().includes('pass')) return `<span class="pill pill-pass">Pass</span>`;
+  if (v.toLowerCase().includes('fail')) return `<span class="pill pill-fail">Fail</span>`;
+  return `<span class="pill pill-open">${s||'—'}</span>`;
 }
 
 function qcPill(v) {
@@ -1080,9 +1082,9 @@ function switchTab(name) {
 // ══════════════════════════════════════════════════════
 // RENDER — SALES
 // ══════════════════════════════════════════════════════
-function threeMonthsAgo() {
+function twelveMonthsAgo() {
   const d = new Date();
-  d.setMonth(d.getMonth() - 3);
+  d.setMonth(d.getMonth() - 12);
   return d;
 }
 
@@ -1111,20 +1113,20 @@ function renderSales(d) {
   });
   D.qcMap = qcMap;
 
-  // Filter last 3 months
-  const cutoff = threeMonthsAgo();
+  // Filter last 12 months
+  const cutoff = twelveMonthsAgo();
   const orders3m = allOrd.filter(o => {
     const dt = new Date(o['Order Date'] || o['Date'] || o['date'] || '');
     return isNaN(dt) ? true : dt >= cutoff;  // keep if date unknown
   });
 
   const open3m = orders3m.filter(o => {
-    const s = String(o['Order Status'] || o['Status'] || '').toLowerCase();
-    return !s.includes('dispatch') && !s.includes('done') && !s.includes('complete');
+    const s = String(o['Order Status'] || o['Status'] || '').trim();
+    return s !== 'Completed' && s !== 'Cancelled';
   });
   const disp3m = orders3m.filter(o => {
-    const s = String(o['Order Status'] || o['Status'] || '').toLowerCase();
-    return s.includes('dispatch') || s.includes('done') || s.includes('complete');
+    const s = String(o['Order Status'] || o['Status'] || '').trim();
+    return s === 'Completed';
   });
 
   // Delivery days
@@ -1184,7 +1186,7 @@ function renderSales(d) {
         </tr>`;
       }).join('');
 
-  // Top customers bar chart (3 months)
+  // Top customers bar chart (12 months)
   const custMap2 = {};
   orders3m.forEach(o => {
     const c = f(o['Customer Name']);
@@ -1201,11 +1203,11 @@ function renderOrdersTable(orders, qcMap) {
 
   let filtered = [...orders];
 
-  // Status filter
+  // Status filter — exact match against real sheet values
   if (statusFil) {
     filtered = filtered.filter(o => {
-      const s = String(o['Order Status'] || o['Status'] || '').toLowerCase();
-      return s.includes(statusFil);
+      const s = String(o['Order Status'] || o['Status'] || '').trim();
+      return s === statusFil;
     });
   }
 
@@ -1260,8 +1262,8 @@ function runTrace() {
   if (!query || query.length < 2) {
     el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--muted)">
       <div style="font-size:32px;margin-bottom:12px">🔬</div>
-      <div style="font-size:14px;font-weight:600;color:var(--dim)">Enter an invoice or order ID above</div>
-      <div style="font-size:12px;margin-top:6px">Results will appear instantly as you type</div>
+      <div style="font-size:14px;font-weight:600;color:var(--dim)">Search by invoice, order ID or customer name</div>
+      <div style="font-size:12px;margin-top:6px">Results appear instantly as you type</div>
     </div>`;
     return;
   }
@@ -1273,26 +1275,28 @@ function runTrace() {
   const qcMap    = D.qcMap    || {};
 
   // Find matching order — by invoice OR order ID
-  let matchedOrder  = null;
-  let matchedQC     = null;
+  let matchedOrder = null;
+  let matchedQC    = null;
 
-  // Search QC by invoice number
+  // Search QC by invoice number or order ID
   matchedQC = qc.find(r => {
-    const inv = String(r['SB Invoice'] || r['Invoice Number'] || r['Invoice Number'] || '').toLowerCase();
-    const oid = String(r['Order Id']  || '').toLowerCase();
+    const inv = String(r['SB Invoice'] || r['Invoice Number'] || '').toLowerCase();
+    const oid = String(r['Order Id'] || '').toLowerCase();
     return inv.includes(query) || oid.includes(query);
   });
 
-  // Search orders by order ID or via QC match
+  // Search orders by order ID, customer name, or invoice
   if (matchedQC) {
     const oid = String(matchedQC['Order Id'] || '').trim();
     matchedOrder = orders.find(o => String(o['Order Id']||'').trim() === oid);
   }
   if (!matchedOrder) {
-    matchedOrder = orders.find(o =>
-      String(o['Order Id']||'').toLowerCase().includes(query) ||
-      String(o['Customer Name']||'').toLowerCase().includes(query)
-    );
+    matchedOrder = orders.find(o => {
+      const oid  = String(o['Order Id']||'').toLowerCase();
+      const cust = String(o['Customer Name']||'').toLowerCase();
+      const inv  = String(o['_invoice']||o['Invoice Number']||'').toLowerCase();
+      return oid.includes(query) || cust.includes(query) || inv.includes(query);
+    });
     if (matchedOrder && !matchedQC) {
       const oid = String(matchedOrder['Order Id']||'').trim();
       matchedQC = qc.find(r => String(r['Order Id']||r['OrderId']||'').trim() === oid);
@@ -1303,7 +1307,7 @@ function runTrace() {
     el.innerHTML = `<div class="trace-not-found">
       <div style="font-size:24px;margin-bottom:8px">🔍</div>
       <div style="font-weight:600;margin-bottom:4px">No results for "${query}"</div>
-      <div style="font-size:11px;opacity:.7">Try the SB Invoice number (e.g. INV-441), Order ID, or customer name</div>
+      <div style="font-size:11px;opacity:.7">Try invoice number, order ID (e.g. 3008), or customer name</div>
     </div>`;
     return;
   }
@@ -1459,166 +1463,102 @@ function clearTrace() {
 // RENDER — QC & DISPATCH
 // ══════════════════════════════════════════════════════
 function renderQC(d) {
-  const orders    = d.orders    || [];
-  const qcOrders  = d.qcOrders  || [];
-  const qc        = d.qc        || [];
-  // Merge qcOrders into qc if qc is empty
-  const qcData    = qc.length ? qc : qcOrders;
+  const orders   = d.orders   || [];
+  const qcOrders = d.qcOrders || [];
+  const qc       = d.qc       || [];
+  const qcData   = qc.length ? qc : qcOrders;
 
-  // Build order date map
-  const orderDateMap = {};
+  const orderDateMap = {}, customerMap = {};
   orders.forEach(o => {
     const oid = String(o['Order Id'] || '').trim();
-    orderDateMap[oid] = o['Order Date'] || o['Date'] || o['date'];
-  });
-  const customerMap = {};
-  orders.forEach(o => {
-    const oid = String(o['Order Id'] || '').trim();
-    customerMap[oid] = o['Customer Name'] || '';
+    orderDateMap[oid] = o['Order Date'] || o['Date'] || o['date'] || '';
+    customerMap[oid]  = o['Customer Name'] || '';
   });
 
-  let pass = 0, fail = 0, noResult = 0;
+  const cutoff12 = twelveMonthsAgo();
+  let pass = 0, fail = 0, noResult = 0, dispToday = 0;
   const todayStr = today();
-  let dispToday = 0;
 
-  const qcWithDays = qcData.map(r => {
-    const oid = String(r['Order Id'] || r['OrderId'] || '').trim();
+  const qcEnriched = qcData.map(r => {
+    const oid      = String(r['Order Id'] || r['OrderId'] || '').trim();
     const dispDate = r['Date of Dispatch'] || r['Dispatch Date'] || r['Dispatch date'] || '';
-    const orderDate = orderDateMap[oid] || '';
-    const days = calcDays(orderDate, dispDate);
-    const result = String(r['Final QC Pass/Fail'] || r['QC Result'] || '');
+    const orderDate= orderDateMap[oid] || '';
+    const days     = calcDays(orderDate, dispDate);
+    const result   = String(r['Final QC Pass/Fail'] || r['QC Result'] || '');
     if (result.toLowerCase().includes('pass') || result === 'TRUE') pass++;
     else if (result.toLowerCase().includes('fail') || result === 'FALSE') fail++;
     else noResult++;
-    if (dispDate && dispDate.toString().startsWith(todayStr)) dispToday++;
-    return { ...r, _oid: oid, _days: days, _customer: customerMap[oid] || '' };
+    if (dispDate && String(dispDate).startsWith(todayStr)) dispToday++;
+    return { ...r, _oid: oid, _days: days,
+             _customer: customerMap[oid] || '',
+             _orderDate: orderDate, _dispDate: dispDate,
+             _invoice: r['SB Invoice'] || r['Invoice Number'] || '',
+             _result: result };
   });
 
-  $('k-qc-total').textContent    = qcData.length;
-  $('k-qc-pass').textContent     = pass;
-  $('k-qc-fail').textContent     = fail;
-  $('k-disp-today').textContent  = dispToday;
-  $('qc-count').textContent      = `${qc.length} records`;
-
-  allQC = qcWithDays;
-  renderQCTable(qcWithDays);
-
-  // QC bars
-  barChart('qc-bars', [
-    {lbl:'Pass', val:pass},
-    {lbl:'Fail', val:fail},
-    {lbl:'No Result', val:noResult},
-  ], 'green');
-
-  // Delivery bucket bars
-  let b0=0, b7=0, b14=0, b30=0;
-  qcWithDays.forEach(r => {
-    const d = r._days;
-    if (d === null) return;
-    if (d <= 7) b0++;
-    else if (d <= 14) b7++;
-    else if (d <= 30) b14++;
-    else b30++;
+  const qcFiltered = qcEnriched.filter(r => {
+    if (!r._dispDate) return true;
+    const dt = new Date(r._dispDate);
+    return isNaN(dt) ? true : dt >= cutoff12;
   });
-  barChart('del-bars', [
-    {lbl:'≤ 7 days', val:b0},
-    {lbl:'8–14 days', val:b7},
-    {lbl:'15–30 days', val:b14},
-    {lbl:'> 30 days', val:b30},
-  ], 'teal');
+
+  // Group by Order ID — newest dispatch first
+  const grouped = {};
+  qcFiltered.forEach(r => {
+    const oid = r._oid || 'unknown';
+    if (!grouped[oid]) {
+      grouped[oid] = { oid, customer: r._customer, orderDate: r._orderDate,
+                       dispDate: r._dispDate, invoice: r._invoice,
+                       days: r._days, items: [], result: r._result };
+    }
+    grouped[oid].items.push(r);
+    if ((r._dispDate||'') > (grouped[oid].dispDate||'')) {
+      grouped[oid].dispDate = r._dispDate;
+      grouped[oid].days = r._days;
+    }
+  });
+
+  const groupedArr = Object.values(grouped)
+    .sort((a,b) => new Date(b.dispDate||0) - new Date(a.dispDate||0));
+
+  $('k-qc-total').textContent   = qcFiltered.length;
+  $('k-qc-pass').textContent    = pass;
+  $('k-qc-fail').textContent    = fail;
+  $('k-disp-today').textContent = dispToday;
+  $('qc-count').textContent     = `${groupedArr.length} orders · ${qcFiltered.length} items`;
+
+  allQC = groupedArr;
+  renderQCTable(groupedArr);
+
+  barChart('qc-bars', [{lbl:'Pass',val:pass},{lbl:'Fail',val:fail},{lbl:'No Result',val:noResult}], 'green');
+  let b0=0,b7=0,b14=0,b30=0;
+  qcFiltered.forEach(r => {
+    const dd=r._days; if(dd===null)return;
+    if(dd<=7)b0++; else if(dd<=14)b7++; else if(dd<=30)b14++; else b30++;
+  });
+  barChart('del-bars',[{lbl:'≤ 7 days',val:b0},{lbl:'8–14 days',val:b7},{lbl:'15–30 days',val:b14},{lbl:'> 30 days',val:b30}],'teal');
 }
 
-function renderQCTable(qcData) {
+function renderQCTable(groups) {
   const search = ($('search-qc')?.value || '').toLowerCase();
   const filtered = search
-    ? qcData.filter(r => JSON.stringify(r).toLowerCase().includes(search))
-    : qcData;
-  const display = filtered.slice(-60).reverse();
-  $('qc-tbody').innerHTML = display.length === 0
-    ? '<tr><td colspan="5" class="no-data">No QC records</td></tr>'
-    : display.map(r => `<tr>
-        <td class="mono">#${f(r._oid)}</td>
-        <td>${f(r['Date of Dispatch'] || r['Dispatch Date'])}</td>
-        <td>${f(r['SB Invoice'] || r['Invoice Number'])}</td>
-        <td>${qcPill(r['Final QC Pass/Fail'] || r['QC Result'])}</td>
-        <td>${deliveryBadge(r._days)}</td>
+    ? groups.filter(g => (g.oid+g.customer+g.invoice+g.dispDate).toLowerCase().includes(search))
+    : groups;
+  $('qc-tbody').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="8" class="no-data">No QC records</td></tr>'
+    : filtered.map(g => `<tr>
+        <td class="mono">#${f(g.oid)}</td>
+        <td class="bold">${f(g.customer)}</td>
+        <td>${f(g.orderDate)}</td>
+        <td>${f(g.dispDate)}</td>
+        <td class="mono" style="color:var(--teal);font-size:11px">${f(g.invoice)}</td>
+        <td style="text-align:center"><span style="background:#f3f4f6;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${g.items.length}</span></td>
+        <td>${qcPill(g.result)}</td>
+        <td>${deliveryBadge(g.days)}</td>
       </tr>`).join('');
 }
 
 function filterQC() { renderQCTable(allQC); }
-
-// ══════════════════════════════════════════════════════
-// RENDER — RAW MATERIAL
-// ══════════════════════════════════════════════════════
-function renderRM(d) {
-  const rm        = d.rm        || [];
-  const rmSummary = d.rmSummary || [];
-  const purchases = d.rmPurchases || [];
-
-  $('k-rm-total').textContent     = d.summary?.totalRmEntries || rm.length;
-  $('k-rm-mats').textContent      = d.summary?.totalRmMaterials || rmSummary.length;
-  $('k-rm-purchases').textContent = purchases.length;
-
-  // Total inward qty
-  const totalInQty = rmSummary.reduce((s, r) => s + (parseFloat(r.totalQty)||0), 0);
-  $('k-rm-in').textContent = totalInQty > 0 ? totalInQty.toLocaleString('en-IN') : rm.length;
-  $('rm-in-count').textContent = `${rm.length} entries`;
-
-  // Inward table
-  $('rm-in-tbody').innerHTML = rm.length === 0
-    ? '<tr><td colspan="7" class="no-data">No RM entries</td></tr>'
-    : rm.map(r => `<tr>
-        <td class="mono">${f(r['Product Barcode'] || r['Barcode'])}</td>
-        <td>${f(r['Date Time'] || r['Date'])}</td>
-        <td class="bold">${f(r['Material Name'] || r['Material'])}</td>
-        <td>${f(r['Supplier'])}</td>
-        <td>${f(r['Batch Number'] || r['Batch No'])}</td>
-        <td>${f(r['Shelf'])}</td>
-        <td class="mono">${f(r['Quantity'])}</td>
-      </tr>`).join('');
-
-  // Bar chart — by material
-  const barData = rmSummary.slice(0,12).map(r => ({lbl: r.material, val: parseFloat(r.totalQty)||r.entries}));
-  barChart('rm-bars', barData, 'teal');
-
-  // Tally: inward vs outwards (purchases vs sales if available)
-  const rmSalesData  = d.rmSales || [];
-  const rmSalesTotal = rmSalesData.reduce((s,r) => s + (parseFloat(r['Quantity']||r['Qty']||r['quantity'])||0), 0);
-  const rmInTotal    = totalInQty;
-  const balance      = rmInTotal - rmSalesTotal;
-
-  const tallyItems = rmSummary.slice(0,8).map(r => ({
-    material: r.material,
-    inward: parseFloat(r.totalQty)||0,
-    entries: r.entries
-  }));
-
-  $('rm-tally-wrap').innerHTML = tallyItems.length === 0
-    ? '<div class="no-data">No tally data</div>'
-    : tallyItems.map(item => `
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f2f5;">
-        <div style="font-weight:500; color:var(--text); width:140px; font-size:12px">${item.material}</div>
-        <div style="text-align:center;">
-          <div style="font-family:'DM Mono',monospace; color:var(--green); font-size:13px">${item.inward.toLocaleString('en-IN')}</div>
-          <div style="font-size:10px; color:var(--muted)">inward</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-family:'DM Mono',monospace; color:var(--muted); font-size:13px">${item.entries}</div>
-          <div style="font-size:10px; color:var(--muted)">entries</div>
-        </div>
-      </div>`).join('');
-
-  // Purchases table
-  $('rm-purchase-tbody').innerHTML = purchases.length === 0
-    ? '<tr><td colspan="5" class="no-data">No purchase records</td></tr>'
-    : purchases.slice(-40).reverse().map(r => `<tr>
-        <td>${f(r['Date'] || r['Date Time'] || r['Purchase Date'])}</td>
-        <td class="bold">${f(r['Material Name'] || r['Material'] || r['Item'] || r['Product'])}</td>
-        <td>${f(r['Supplier'])}</td>
-        <td class="mono">${f(r['Quantity'] || r['Qty'])}</td>
-        <td>${f(r['Batch Number'] || r['Batch No'] || r['Batch'])}</td>
-      </tr>`).join('');
-}
 
 // ══════════════════════════════════════════════════════
 // RENDER — MAINTENANCE
@@ -1681,6 +1621,110 @@ function renderMaint(d) {
         <td>${f(r['Employee Code'])}</td>
       </tr>`).join('');
 }
+
+// ══════════════════════════════════════════════════════
+// RENDER — RAW MATERIAL
+// ══════════════════════════════════════════════════════
+function renderRM(d) {
+  const rmAll     = d.rm          || [];
+  const rmSummary = d.rmSummary   || [];
+  const purchases = d.rmPurchases || [];
+
+  // Filter last 12 months, latest first
+  const cutoff12 = twelveMonthsAgo();
+  const rm = rmAll.filter(r => {
+    const dt = new Date(r['Date Time'] || r['Date'] || '');
+    return isNaN(dt) ? true : dt >= cutoff12;
+  }).sort((a,b) => new Date(b['Date Time']||b['Date']||0) - new Date(a['Date Time']||a['Date']||0));
+
+  const uniqueMats = new Set(rm.map(r => (r['Material Name']||r['Material']||'').trim())).size;
+  const totalInQty = rm.reduce((s,r) => s + (parseFloat(r['Quantity'])||0), 0);
+
+  $('k-rm-total').textContent     = rm.length;
+  $('k-rm-mats').textContent      = uniqueMats || rmSummary.length;
+  $('k-rm-purchases').textContent = purchases.length;
+  $('k-rm-in').textContent        = totalInQty > 0 ? totalInQty.toLocaleString('en-IN') : rm.length;
+
+  // Group by material
+  const matGroups = {};
+  rm.forEach(r => {
+    const mat = (r['Material Name'] || r['Material'] || 'Unknown').trim();
+    if (!matGroups[mat]) matGroups[mat] = [];
+    matGroups[mat].push(r);
+  });
+  const matGroupArr = Object.entries(matGroups).sort((a,b) => b[1].length - a[1].length);
+
+  $('rm-in-count').textContent = `${rm.length} entries · ${matGroupArr.length} materials`;
+
+  if (rm.length === 0) {
+    $('rm-in-tbody').innerHTML = '<tr><td colspan="7" class="no-data">No RM entries in last 12 months</td></tr>';
+  } else {
+    let rows = '';
+    matGroupArr.forEach(([mat, entries]) => {
+      const totalQty = entries.reduce((s,r) => s + (parseFloat(r['Quantity'])||0), 0);
+      rows += `<tr style="background:#f8f9fb;border-top:2px solid #e5e7eb">
+        <td colspan="6" style="font-weight:700;font-size:12px;color:#111827;padding:8px 14px">
+          ${mat}
+          <span style="font-weight:400;color:#9ca3af;font-size:11px;margin-left:8px">${entries.length} entries · ${totalQty.toLocaleString('en-IN')} kg total</span>
+        </td>
+        <td style="font-weight:700;font-size:12px;color:#111827;text-align:right;padding:8px 14px">${totalQty.toLocaleString('en-IN')}</td>
+      </tr>`;
+      entries.forEach(r => {
+        rows += `<tr>
+          <td class="mono" style="padding-left:24px;color:#9ca3af">${f(r['Product Barcode']||r['Barcode'])}</td>
+          <td style="color:#6b7280;font-size:12px">${f(r['Date Time']||r['Date'])}</td>
+          <td style="color:#6b7280;font-size:12px">${f(r['Supplier'])}</td>
+          <td style="color:#6b7280;font-size:12px">${f(r['Batch Number']||r['Batch No'])}</td>
+          <td style="color:#6b7280;font-size:12px">${f(r['Shelf'])}</td>
+          <td></td>
+          <td class="mono">${f(r['Quantity'])}</td>
+        </tr>`;
+      });
+    });
+    $('rm-in-tbody').innerHTML = rows;
+  }
+
+  // Bar chart — by material qty
+  const barData = matGroupArr.slice(0,12).map(([lbl, entries]) => ({
+    lbl, val: entries.reduce((s,r) => s + (parseFloat(r['Quantity'])||0), 0)
+  }));
+  barChart('rm-bars', barData, 'teal');
+
+  // Tally
+  const rmSalesData  = d.rmSales || [];
+  const rmSalesTotal = rmSalesData.reduce((s,r) => s + (parseFloat(r['Quantity']||r['Qty']||r['quantity'])||0), 0);
+  const balance      = totalInQty - rmSalesTotal;
+
+  $('rm-tally-wrap').innerHTML = matGroupArr.length === 0
+    ? '<div class="no-data">No tally data</div>'
+    : matGroupArr.slice(0,8).map(([mat, entries]) => {
+        const qty = entries.reduce((s,r) => s+(parseFloat(r['Quantity'])||0), 0);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5">
+          <div style="font-weight:500;color:#111827;width:140px;font-size:12px">${mat}</div>
+          <div style="text-align:center">
+            <div style="font-family:'SF Mono',monospace;color:var(--green);font-size:13px">${qty.toLocaleString('en-IN')}</div>
+            <div style="font-size:10px;color:var(--muted)">inward</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'SF Mono',monospace;color:var(--muted);font-size:13px">${entries.length}</div>
+            <div style="font-size:10px;color:var(--muted)">entries</div>
+          </div>
+        </div>`;
+      }).join('');
+
+  // Purchases table
+  $('rm-purchase-tbody').innerHTML = purchases.length === 0
+    ? '<tr><td colspan="5" class="no-data">No purchase records</td></tr>'
+    : purchases.slice(-40).reverse().map(r => `<tr>
+        <td>${f(r['Date']||r['Date Time']||r['Purchase Date'])}</td>
+        <td class="bold">${f(r['Material Name']||r['Material']||r['Item']||r['Product'])}</td>
+        <td>${f(r['Supplier'])}</td>
+        <td class="mono">${f(r['Quantity']||r['Qty'])}</td>
+        <td>${f(r['Batch Number']||r['Batch No']||r['Batch'])}</td>
+      </tr>`).join('');
+}
+
+
 
 // ══════════════════════════════════════════════════════
 // RENDER — DAILY MACHINE
