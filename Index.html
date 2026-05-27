@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stallion Barware — Operations</title>
+<!-- Helvetica system font stack — no external fonts needed -->
+<style>
+/* ── TOKENS ────────────────────────────────────────────────── */
+:root {
+  --bg:       #f4f5f7;
+  --surface:  #ffffff;
+  --card:     #ffffff;
+  --border:   #e2e4e9;
+  --border2:  #d0d4dc;
+  --text:     #111827;
+  --muted:    #6b7280;
+  --dim:      #374151;
+
+  --gold:     #0d2b26;
+  --gold2:    #1a4a42;
+  --blue:     #1d4ed8;
+  --blue2:    #2563eb;
+  --green:    #15803d;
+  --green2:   #16a34a;
+  --red:      #dc2626;
+  --amber:    #d97706;
+  --purple:   #7c3aed;
+  --teal:     #0f766e;
+
+  --r:        6px;
+  --r2:       10px;
+  --r3:       14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.hdr {
+  background: #ffffff;
+  border-bottom: 2px solid #e2e4e9;
+  padding: 0 24px;
+  display: flex;
+  align-items: stretch;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.hdr-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 24px;
+  border-right: 1px solid #e2e4e9;
+  margin-right: 0;
+}
+
+.hdr-logo {
+  width: 34px; height: 34px;
+  background: var(--gold);
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em;
+  font-weight: 800;
+  font-size: 15px;
+  color: #111827;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.hdr-name {
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.hdr-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* ── TABS ────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 16px;
+  flex: 1;
+}
+
+.tab {
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.tab:hover { color: #111827; }
+
+.tab.active {
+  color: #0d2b26;
+  border-bottom-color: #0d2b26;
+  font-weight: 600;
+}
+
+.tab-icon { font-size: 14px; }
+
+/* ── STATUS BAR ──────────────────────────────────────────────── */
+.hdr-right {
+  display: flex; align-items: center; gap: 14px;
+  padding-left: 20px;
+  border-left: 1px solid #e2e4e9;
+  margin-left: auto;
+}
+
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #15803d;
+  box-shadow: 0 0 0 2px rgba(21,128,61,.2);
+  animation: blink 2s infinite;
+  flex-shrink: 0;
+}
+.live-dot.err { background: #dc2626; animation: none; box-shadow: none; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.live-txt { font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace; font-size: 11px; color: var(--muted); }
+
+.btn-refresh {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: #4b5563;
+  padding: 5px 12px;
+  border-radius: var(--r);
+  font-size: 12px;
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-refresh:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── PANELS ──────────────────────────────────────────────────── */
+.panel { display: none; padding: 24px 28px; animation: fadeIn .2s ease; background: #f4f5f7; min-height: calc(100vh - 60px); }
+.panel.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── GRID HELPERS ────────────────────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.gcol { display: flex; flex-direction: column; gap: 16px; }
+@media (max-width: 900px) { .g2,.g3,.g4,.g5 { grid-template-columns: 1fr; } }
+
+/* ── KPI CARD ────────────────────────────────────────────────── */
+.kpi {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: var(--r2);
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.kpi::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.kpi.gold::before  { background: #0d2b26; }
+.kpi.blue::before  { background: var(--blue); }
+.kpi.green::before { background: var(--green); }
+.kpi.red::before   { background: var(--red); }
+.kpi.purple::before{ background: var(--purple); }
+.kpi.teal::before  { background: var(--teal); }
+.kpi.amber::before { background: var(--amber); }
+
+.kpi-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.kpi-val {
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+.kpi-sub { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+.kpi-badge {
+  display: inline-flex; align-items: center;
+  gap: 4px;
+  font-size: 10.5px; font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+.badge-g { background: #dcfce7; color: #166534; }
+.badge-r { background: #fee2e2; color: #991b1b; }
+.badge-a { background: #fef3c7; color: #92400e; }
+
+/* ── SECTION HEADER ──────────────────────────────────────────── */
+.sec {
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  margin: 24px 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sec:first-child { margin-top: 0; }
+.sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── TABLE CARD ──────────────────────────────────────────────── */
+.tcard {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: var(--r2);
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+
+.tcard-hdr {
+  padding: 11px 18px;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  background: #fafbfc;
+}
+
+.tcard-hdr-left { display: flex; align-items: center; gap: 8px; }
+.tcard-title { font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.tcard-count { font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace; font-size: 11px; color: var(--muted); }
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  background: #f8f9fb;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid rgba(37,42,56,.6);
+  transition: background .12s;
+}
+tbody tr:hover { background: #f8fafc; }
+tbody tr:last-child { border-bottom: none; }
+
+tbody td {
+  padding: 10px 16px;
+  color: #4b5563;
+  vertical-align: middle;
+}
+
+td.mono { font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--gold); }
+td.bold { font-weight: 600; color: var(--text); }
+
+.no-data {
+  padding: 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── PILLS ───────────────────────────────────────────────────── */
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+  white-space: nowrap;
+}
+.pill-open     { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.pill-dispatch { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
+.pill-pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.pill-done     { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.pill-pass     { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.pill-fail     { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.pill-hold     { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+/* ── BAR CHART ───────────────────────────────────────────────── */
+.bars { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-lbl { font-size: 11.5px; color: var(--dim); width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.bar-fill.gold   { background: #0d2b26; }
+.bar-fill.blue   { background: #1d4ed8; }
+.bar-fill.green  { background: #15803d; }
+.bar-fill.teal   { background: #0f766e; }
+.bar-fill.purple { background: #7c3aed; }
+.bar-val { font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace; font-size: 11px; color: var(--muted); width: 52px; text-align: right; flex-shrink: 0; }
+
+/* ── SEARCH ──────────────────────────────────────────────────── */
+.search-wrap {
+  display: flex; gap: 10px; align-items: center;
+  margin-bottom: 16px;
+}
+.search-input {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: var(--r);
+  font-size: 13px;
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  outline: none;
+  transition: border-color .2s;
+}
+.search-input:focus { border-color: var(--gold); }
+.search-input::placeholder { color: var(--muted); }
+
+/* ── TALLY CARD ──────────────────────────────────────────────── */
+.tally {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: var(--r2);
+  padding: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.tally-side { text-align: center; }
+.tally-lbl { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+.tally-num { font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em; font-size: 26px; font-weight: 700; }
+.tally-num.green { color: var(--green); }
+.tally-num.red   { color: var(--red); }
+.tally-num.amber { color: var(--amber); }
+.tally-div { width: 1px; height: 48px; background: #e5e7eb; }
+
+/* ── DELIVERY BADGE ──────────────────────────────────────────── */
+.del-badge {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+  font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace;
+}
+.del-good { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.del-warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.del-bad  { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.del-na   { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+
+/* ── SKELETON ────────────────────────────────────────────────── */
+.skel {
+  background: linear-gradient(90deg, #e8eaed 25%, #d8dce4 50%, #e8eaed 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+  height: 20px; width: 60%;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── ERROR BANNER ────────────────────────────────────────────── */
+.err-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--r);
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #dc2626;
+  margin-bottom: 16px;
+  display: none;
+}
+
+/* ── HEALTH DOT ──────────────────────────────────────────────── */
+.health { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.health.g { background: #15803d; }
+.health.a { background: #d97706; }
+.health.r { background: #dc2626; }
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+}
+
+/* ── TRACEABILITY ──────────────────────────────────────────── */
+.trace-found {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: var(--r2);
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.trace-found-hdr {
+  background: linear-gradient(135deg, rgba(13,43,38,.05), rgba(29,78,216,.04));
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.trace-badge {
+  background: #0d2b26;
+  color: #ffffff;
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.trace-title { font-family: Helvetica Neue, Helvetica, Arial, sans-serif; letter-spacing: -0.02em; font-weight: 700; font-size: 15px; color: var(--text); }
+.trace-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.trace-timeline {
+  padding: 0;
+}
+
+.trace-step {
+  display: flex;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f2f5;
+  position: relative;
+}
+.trace-step:last-child { border-bottom: none; }
+.trace-step:hover { background: #fafbfc; }
+
+.trace-step-icon {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-order   { background: rgba(59,130,246,.15); }
+.step-product { background: rgba(168,85,247,.15); }
+.step-qc      { background: rgba(34,197,94,.15); }
+.step-rm      { background: rgba(20,184,166,.15); }
+.step-purchase{ background: rgba(232,168,48,.15); }
+
+.trace-step-body { flex: 1; }
+.trace-step-label {
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); margin-bottom: 6px;
+}
+.trace-step-content { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.trace-kv { display: flex; flex-direction: column; gap: 2px; }
+.trace-kv-key { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.trace-kv-val { font-size: 13px; font-weight: 500; color: var(--text); }
+.trace-kv-val.mono { font-family: 'SF Mono', SFMono-Regular, ui-monospace, Consolas, monospace; color: var(--gold); }
+
+.trace-not-found {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--r2);
+  padding: 24px;
+  text-align: center;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+
+/* ── MOLD IMAGE GALLERY ──────────────────────────────────── */
+.img-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.img-card {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  transition: box-shadow .2s;
+}
+.img-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+
+.img-card-hdr {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f2f5;
+  background: #fafbfc;
+}
+.img-card-title { font-size: 12px; font-weight: 600; color: #111827; }
+.img-card-sub   { font-size: 10.5px; color: #6b7280; margin-top: 1px; }
+
+.img-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.img-slot {
+  padding: 10px;
+  text-align: center;
+  border-right: 1px solid #f0f2f5;
+}
+.img-slot:last-child { border-right: none; }
+.img-slot-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.img-slot img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #f8f9fb;
+  cursor: zoom-in;
+  transition: transform .15s;
+}
+.img-slot img:hover { transform: scale(1.02); }
+
+.img-slot .img-placeholder {
+  width: 100%;
+  height: 120px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #d1d5db;
+}
+
+.img-breakdown-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fee2e2; color: #991b1b;
+  border: 1px solid #fecaca;
+  font-size: 9.5px; font-weight: 600;
+  padding: 1px 7px; border-radius: 20px;
+  margin-top: 4px;
+}
+.img-preventive-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #dcfce7; color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 9.5px; font-weight: 600;
+  padding: 1px 7px; border-radius: 20px;
+  margin-top: 4px;
+}
+
+/* Lightbox */
+.lightbox {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+.lightbox-close {
+  position: absolute; top: 20px; right: 24px;
+  font-size: 28px; color: #fff; cursor: pointer;
+  background: none; border: none; line-height: 1;
+}
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-brand">
+    <img src="data:image/png;base64,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" alt="Stallion Barware" style="height:38px;width:auto;filter:invert(1) sepia(1) saturate(10) hue-rotate(140deg) brightness(0.2);object-fit:contain;">
+    <div style="margin-left:2px">
+      <div class="hdr-sub" style="font-size:10px;color:#6b7280;margin-top:2px;letter-spacing:.06em;text-transform:uppercase">Operations Dashboard</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('sales')">
+      <span class="tab-icon">📦</span> Sales
+    </div>
+    <div class="tab" onclick="switchTab('qc')">
+      <span class="tab-icon">✅</span> QC &amp; Dispatch
+    </div>
+    <div class="tab" onclick="switchTab('rm')">
+      <span class="tab-icon">🧪</span> Raw Material
+    </div>
+    <div class="tab" onclick="switchTab('maint')">
+      <span class="tab-icon">🔧</span> Maintenance
+    </div>
+    <div class="tab" onclick="switchTab('daily')">
+      <span class="tab-icon">📋</span> Daily Machine
+    </div>
+    <div class="tab" onclick="switchTab('trace')">
+      <span class="tab-icon">🔬</span> Traceability
+    </div>
+  </div>
+
+  <div class="hdr-right">
+    <div class="live-dot" id="live-dot"></div>
+    <div class="live-txt" id="live-txt">Connecting…</div>
+    <button class="btn-refresh" onclick="fetchAll()">↻ Refresh</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1 — SALES
+═══════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-sales">
+  <div class="err-banner" id="err-sales"></div>
+
+  <div class="sec">📊 Sales Overview — Last 3 Months</div>
+  <div class="g5" id="sales-kpis">
+    <div class="kpi gold"><div class="kpi-label">Orders (3 months)</div><div class="kpi-val" id="k-total"><div class="skel"></div></div><div class="kpi-sub">last 90 days</div></div>
+    <div class="kpi blue"><div class="kpi-label">Open Orders</div><div class="kpi-val" id="k-open"><div class="skel"></div></div><div class="kpi-sub">active / pending</div></div>
+    <div class="kpi purple"><div class="kpi-label">Dispatched</div><div class="kpi-val" id="k-disp"><div class="skel"></div></div><div class="kpi-sub">last 3 months</div></div>
+    <div class="kpi green"><div class="kpi-label">Avg Delivery</div><div class="kpi-val" id="k-del"><div class="skel"></div></div><div class="kpi-sub">days order→dispatch</div></div>
+    <div class="kpi teal"><div class="kpi-label">Customers</div><div class="kpi-val" id="k-cust"><div class="skel"></div></div><div class="kpi-sub">in system</div></div>
+  </div>
+
+  <div class="sec">📋 Orders — Last 3 Months (Newest First)</div>
+  <div class="search-wrap">
+    <input class="search-input" id="search-orders" placeholder="Search order ID, customer, product, status…" oninput="filterOrders()">
+    <select id="filter-status" onchange="filterOrders()" style="background:#fff;border:1.5px solid #e2e4e9;color:#374151;padding:8px 12px;border-radius:6px;font-size:12px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;outline:none;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04);">
+      <option value="">All Status</option>
+      <option value="open">Open</option>
+      <option value="dispatch">Dispatched</option>
+      <option value="pending">Pending</option>
+    </select>
+  </div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">All Orders</span>
+        <span class="tcard-count" id="open-count">—</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Order ID</th><th>Customer</th><th>Order Date</th><th>Product</th><th>Product Code</th><th>Status</th><th>Dispatch Date</th><th>SB Invoice</th><th>Delivery Days</th>
+      </tr></thead>
+      <tbody id="orders-tbody"><tr><td colspan="9" class="no-data">Loading…</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:16px">
+    <div>
+      <div class="sec">⏱ Delivery Time Analysis</div>
+      <div class="tcard">
+        <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">Recent Dispatches</span></div></div>
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Product</th><th>Order Date</th><th>Dispatch Date</th><th>Days</th><th>QC</th></tr></thead>
+          <tbody id="delivery-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec">👥 Top Customers (3 months)</div>
+      <div class="tcard">
+        <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">By Order Count</span></div></div>
+        <div class="bars" id="cust-bars"><div class="no-data">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2 — QC & DISPATCH
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-qc">
+  <div class="err-banner" id="err-qc"></div>
+
+  <div class="sec">✅ QC Overview</div>
+  <div class="g4">
+    <div class="kpi green"><div class="kpi-label">Total QC Records</div><div class="kpi-val" id="k-qc-total"><div class="skel"></div></div></div>
+    <div class="kpi green"><div class="kpi-label">QC Pass</div><div class="kpi-val" id="k-qc-pass"><div class="skel"></div></div></div>
+    <div class="kpi red"><div class="kpi-label">QC Fail</div><div class="kpi-val" id="k-qc-fail"><div class="skel"></div></div></div>
+    <div class="kpi gold"><div class="kpi-label">Dispatched Today</div><div class="kpi-val" id="k-disp-today"><div class="skel"></div></div></div>
+  </div>
+
+  <div class="sec">🚚 QC Records — Items to Check</div>
+  <div class="search-wrap">
+    <input class="search-input" id="search-qc" placeholder="Search order ID, invoice…" oninput="filterQC()">
+  </div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">QC Entries</span>
+        <span class="tcard-count" id="qc-count">—</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Order ID</th><th>Dispatch Date</th><th>SB Invoice</th><th>QC Result</th><th>Days to Dispatch</th>
+      </tr></thead>
+      <tbody id="qc-tbody"><tr><td colspan="5" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="sec">📊 Dispatch Performance</div>
+  <div class="g2">
+    <div class="tcard">
+      <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">QC Pass/Fail Breakdown</span></div></div>
+      <div class="bars" id="qc-bars"><div class="no-data">Loading…</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">Delivery Time Buckets</span></div></div>
+      <div class="bars" id="del-bars"><div class="no-data">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 3 — RAW MATERIAL
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-rm">
+  <div class="err-banner" id="err-rm"></div>
+
+  <div class="sec">🧪 RM Overview</div>
+  <div class="g4">
+    <div class="kpi teal"><div class="kpi-label">Total RM Entries</div><div class="kpi-val" id="k-rm-total"><div class="skel"></div></div></div>
+    <div class="kpi green"><div class="kpi-label">Materials</div><div class="kpi-val" id="k-rm-mats"><div class="skel"></div></div><div class="kpi-sub">unique types</div></div>
+    <div class="kpi blue"><div class="kpi-label">Total Inward Qty</div><div class="kpi-val" id="k-rm-in"><div class="skel"></div></div></div>
+    <div class="kpi amber"><div class="kpi-label">Purchases</div><div class="kpi-val" id="k-rm-purchases"><div class="skel"></div></div><div class="kpi-sub">purchase records</div></div>
+  </div>
+
+  <div class="sec">📥 Inward — Raw Material Stock</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">Recent Inward Entries</span>
+        <span class="tcard-count" id="rm-in-count">—</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Barcode</th><th>Date/Time</th><th>Material</th><th>Supplier</th><th>Batch No</th><th>Shelf</th><th>Qty</th>
+      </tr></thead>
+      <tbody id="rm-in-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="sec">📊 Stock by Material</div>
+  <div class="g2">
+    <div class="tcard">
+      <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">Qty by Material</span></div></div>
+      <div class="bars" id="rm-bars"><div class="no-data">Loading…</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">RM Tally — Inward vs Usage</span></div></div>
+      <div id="rm-tally-wrap" style="padding:16px 18px; display:flex; flex-direction:column; gap:10px;">
+        <div class="no-data">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">🛒 Purchases</div>
+  <div class="tcard">
+    <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">Purchase Records</span></div></div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Material / Item</th><th>Supplier</th><th>Qty</th><th>Batch</th>
+      </tr></thead>
+      <tbody id="rm-purchase-tbody"><tr><td colspan="5" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 4 — MOLD MAINTENANCE
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-maint">
+  <div class="err-banner" id="err-maint"></div>
+
+  <div class="sec">🔧 Maintenance Overview</div>
+  <div class="g4">
+    <div class="kpi gold"><div class="kpi-label">Mold Records</div><div class="kpi-val" id="k-m-mold"><div class="skel"></div></div></div>
+    <div class="kpi red"><div class="kpi-label">Mold Breakdowns</div><div class="kpi-val" id="k-m-bd"><div class="skel"></div></div></div>
+    <div class="kpi blue"><div class="kpi-label">Machine Records</div><div class="kpi-val" id="k-m-mach"><div class="skel"></div></div></div>
+    <div class="kpi green"><div class="kpi-label">Equipment Records</div><div class="kpi-val" id="k-m-equip"><div class="skel"></div></div></div>
+  </div>
+
+  <!-- MOLD DATA -->
+  <div class="sec">🪛 Mold Data</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">Mold Maintenance Log</span>
+        <span class="tcard-count" id="mold-count">—</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Product</th><th>Mold No</th><th>Type</th><th>Issue</th><th>Employee</th>
+      </tr></thead>
+      <tbody id="mold-tbody"><tr><td colspan="6" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- MOLD BREAKDOWN IMAGES -->
+  <div class="sec">📸 Mold Breakdown Photos</div>
+  <div id="mold-images-wrap">
+    <div class="no-data" style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:32px;text-align:center;color:#9ca3af">
+      <div style="font-size:24px;margin-bottom:8px">📷</div>
+      <div style="font-weight:600;color:#6b7280">Photos load from Google Sheets after connecting Apps Script</div>
+      <div style="font-size:11px;margin-top:4px">Before/After images from Mold Data tab will appear here</div>
+    </div>
+  </div>
+
+  <!-- MACHINE DATA -->
+  <div class="sec">⚙️ Machine Data</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">Machine Maintenance Log</span>
+        <span class="tcard-count" id="mach-count">—</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Machine</th><th>Type</th><th>Issue</th><th>Root Cause</th><th>Fix</th><th>By</th>
+      </tr></thead>
+      <tbody id="mach-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- EQUIPMENT DATA -->
+  <div class="sec">🏗️ Equipment Data</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">Equipment Maintenance Log (Recent 30)</span>
+        <span class="tcard-count" id="equip-count">—</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Equipment</th><th>Type</th><th>Status</th><th>Frequency</th><th>By</th>
+      </tr></thead>
+      <tbody id="equip-tbody"><tr><td colspan="6" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 5 — DAILY MACHINE MAINTENANCE
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-daily">
+  <div class="err-banner" id="err-daily"></div>
+
+  <div class="sec">📋 Daily Machine Maintenance</div>
+  <div class="g4">
+    <div class="kpi gold"><div class="kpi-label">Total Records</div><div class="kpi-val" id="k-dm-total"><div class="skel"></div></div></div>
+    <div class="kpi green"><div class="kpi-label">This Month</div><div class="kpi-val" id="k-dm-month"><div class="skel"></div></div></div>
+    <div class="kpi blue"><div class="kpi-label">Last Check</div><div class="kpi-val" id="k-dm-last" style="font-size:18px"><div class="skel"></div></div></div>
+    <div class="kpi teal"><div class="kpi-label">Checked By</div><div class="kpi-val" id="k-dm-who" style="font-size:20px"><div class="skel"></div></div></div>
+  </div>
+
+  <!-- Recent records -->
+  <div class="sec">🗓️ Recent Daily Checks</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <div class="tcard-hdr-left">
+        <span class="tcard-title">Daily Maintenance Records</span>
+        <span class="tcard-count" id="daily-count">—</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Overall Cleaning</th><th>Y-Strainer</th><th>Oil Level</th><th>Final Check By</th><th>Unit 1 Status</th><th>Unit 2 Status</th>
+      </tr></thead>
+      <tbody id="daily-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Machine oil levels bar chart -->
+  <div class="sec">🔩 Machine Oil Levels (Latest Check)</div>
+  <div class="g2">
+    <div class="tcard">
+      <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">Unit 1 — Oil Levels</span></div></div>
+      <div class="bars" id="oil-bars-u1"><div class="no-data">Loading…</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hdr"><div class="tcard-hdr-left"><span class="tcard-title">Unit 2 — Oil Levels</span></div></div>
+      <div class="bars" id="oil-bars-u2"><div class="no-data">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 6 — TRACEABILITY
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-trace">
+  <div class="err-banner" id="err-trace"></div>
+
+  <div class="sec">🔬 Order Traceability</div>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Type an invoice number (SB Invoice) or order ID to trace the full lifecycle — order details, dispatch, QC, and raw material used.</p>
+
+  <div class="search-wrap" style="margin-bottom:0">
+    <input class="search-input" id="trace-input" placeholder="Type SB Invoice (e.g. INV-441) or Order ID (e.g. SB-2903)…" oninput="runTrace()" style="font-size:14px;padding:12px 16px;background:#fff;">
+    <button class="btn-refresh" onclick="clearTrace()" style="height:44px;padding:0 16px">✕ Clear</button>
+  </div>
+
+  <div id="trace-results" style="margin-top:20px">
+    <div style="text-align:center;padding:48px;color:var(--muted)">
+      <div style="font-size:32px;margin-bottom:12px">🔬</div>
+      <div style="font-size:14px;font-weight:600;color:var(--dim)">Enter an invoice or order ID above</div>
+      <div style="font-size:12px;margin-top:6px">Results will appear instantly as you type</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div class="footer" id="footer-ts">Stallion Barware Manufacturing Co. · Vasai, Maharashtra · Auto-refresh every 60s</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// LIVE DATA SOURCES — Published CSV URLs from Google Sheets
+// ══════════════════════════════════════════════════════
+const CSV_URLS = {
+  customers:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJTKqgmvlolXuwdXoZ_ZwATOUm1HPZw5igCW7Hma4UoxGOqw7eAzdhpQNrwI-vTs9_AG02Y4Pas8Bh/pub?gid=881902862&single=true&output=csv',
+  orders:       'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJTKqgmvlolXuwdXoZ_ZwATOUm1HPZw5igCW7Hma4UoxGOqw7eAzdhpQNrwI-vTs9_AG02Y4Pas8Bh/pub?gid=453567004&single=true&output=csv',
+  orderDetails: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJTKqgmvlolXuwdXoZ_ZwATOUm1HPZw5igCW7Hma4UoxGOqw7eAzdhpQNrwI-vTs9_AG02Y4Pas8Bh/pub?gid=561691835&single=true&output=csv',
+  products:     'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJTKqgmvlolXuwdXoZ_ZwATOUm1HPZw5igCW7Hma4UoxGOqw7eAzdhpQNrwI-vTs9_AG02Y4Pas8Bh/pub?gid=1604367228&single=true&output=csv',
+  // Paste additional published CSV URLs here when available:
+  qc:           '',   // SBQC5 → Items to check tab
+  rm:           '',   // SBRM3 → Product tab
+  rmPurchases:  '',   // SBRM3 → Purchases tab
+  moldData:     '',   // SBMolds1 → Mold Data tab
+  machineData:  '',   // SBMolds1 → Machine Data tab
+  equipData:    '',   // SBMolds1 → Equipment Data tab
+  dailyMachine: '',   // SBMolds1 → Daily Machine Maintenance tab
+};
+const APPS_SCRIPT_URL = ''; // Optional: Apps Script for sheets not published as CSV
+const REFRESH_SEC = 60;
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let D = {}; // global data store
+let timer, countdown = REFRESH_SEC;
+let allOrders = [], allQC = [];
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+const $  = id => document.getElementById(id);
+const f  = v  => (v === null || v === undefined || v === '') ? '—' : String(v);
+const today = () => new Date().toISOString().slice(0,10);
+
+function statusPill(s) {
+  const v = String(s||'').toLowerCase();
+  if (v.includes('dispatch') || v.includes('done') || v.includes('complete'))
+    return `<span class="pill pill-dispatch">${s}</span>`;
+  if (v.includes('open') || v.includes('active') || v.includes('progress'))
+    return `<span class="pill pill-open">${s}</span>`;
+  if (v.includes('pending') || v.includes('hold'))
+    return `<span class="pill pill-pending">${s}</span>`;
+  if (v.includes('pass'))  return `<span class="pill pill-pass">Pass</span>`;
+  if (v.includes('fail'))  return `<span class="pill pill-fail">Fail</span>`;
+  return `<span class="pill pill-open">${s||'Open'}</span>`;
+}
+
+function qcPill(v) {
+  const s = String(v||'').toLowerCase();
+  if (s.includes('pass') || s === 'true') return `<span class="pill pill-pass">Pass</span>`;
+  if (s.includes('fail') || s === 'false') return `<span class="pill pill-fail">Fail</span>`;
+  return `<span class="pill pill-hold">${v||'—'}</span>`;
+}
+
+function maintenancePill(type) {
+  const s = String(type||'').toLowerCase();
+  if (s.includes('break')) return `<span class="pill pill-fail">Breakdown</span>`;
+  return `<span class="pill pill-pass">Preventive</span>`;
+}
+
+function deliveryBadge(days) {
+  if (days === null || days === undefined || isNaN(days)) return `<span class="del-badge del-na">—</span>`;
+  if (days <= 7)  return `<span class="del-badge del-good">${days}d</span>`;
+  if (days <= 14) return `<span class="del-badge del-warn">${days}d</span>`;
+  return `<span class="del-badge del-bad">${days}d</span>`;
+}
+
+function calcDays(d1, d2) {
+  if (!d1 || !d2) return null;
+  try {
+    const a = new Date(d1), b = new Date(d2);
+    const diff = Math.round((b - a) / 86400000);
+    return isNaN(diff) ? null : diff;
+  } catch { return null; }
+}
+
+function barChart(containerId, data, colorClass='gold', suffix='') {
+  const el = $(containerId);
+  if (!el) return;
+  if (!data || data.length === 0) { el.innerHTML = '<div class="no-data">No data</div>'; return; }
+  const max = Math.max(...data.map(d => d.val||0)) || 1;
+  const colors = [colorClass,'blue','green','teal','purple','amber'];
+  el.innerHTML = data.map((d,i) => `
+    <div class="bar-row">
+      <div class="bar-lbl" title="${d.lbl}">${d.lbl}</div>
+      <div class="bar-track"><div class="bar-fill ${colors[i%colors.length]}" style="width:${Math.max(2,Math.round((d.val/max)*100))}%"></div></div>
+      <div class="bar-val">${d.val.toLocaleString('en-IN')}${suffix}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// TAB SWITCH
+// ══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  $('panel-' + name).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER — SALES
+// ══════════════════════════════════════════════════════
+function threeMonthsAgo() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 3);
+  return d;
+}
+
+function renderSales(d) {
+  const allOrd    = d.orders    || [];
+  const qc        = d.qc        || [];
+  const customers = d.customers || [];
+  const products  = d.products  || [];
+
+  // Build product lookup by product code
+  const productMap = {};
+  products.forEach(p => {
+    const code = String(p['Product Code'] || '').trim();
+    if (code) productMap[code] = p['Product Name'] || code;
+  });
+
+  // Build QC lookup: orderId → { dispatchDate, qcResult, invoice }
+  const qcMap = {};
+  qc.forEach(r => {
+    const oid = String(r['Order Id'] || r['OrderId'] || '').trim();
+    if (oid) qcMap[oid] = {
+      date:    r['Date of Dispatch'] || r['Dispatch Date'] || r['Dispatch date'] || '',
+      result:  r['Final QC Pass/Fail'] || r['QC Result'] || '',
+      invoice: r['SB Invoice'] || r['Invoice Number'] || r['Invoice Number'] || ''
+    };
+  });
+  D.qcMap = qcMap;
+
+  // Filter last 3 months
+  const cutoff = threeMonthsAgo();
+  const orders3m = allOrd.filter(o => {
+    const dt = new Date(o['Order Date'] || o['Date'] || o['date'] || '');
+    return isNaN(dt) ? true : dt >= cutoff;  // keep if date unknown
+  });
+
+  const open3m = orders3m.filter(o => {
+    const s = String(o['Order Status'] || o['Status'] || '').toLowerCase();
+    return !s.includes('dispatch') && !s.includes('done') && !s.includes('complete');
+  });
+  const disp3m = orders3m.filter(o => {
+    const s = String(o['Order Status'] || o['Status'] || '').toLowerCase();
+    return s.includes('dispatch') || s.includes('done') || s.includes('complete');
+  });
+
+  // Delivery days
+  let totalDays = 0, countDays = 0;
+  disp3m.forEach(o => {
+    const oid = String(o['Order Id'] || '').trim();
+    const qEntry = qcMap[oid];
+    const days = calcDays(o['Order Date'] || o['Date'] || o['date'], qEntry?.date);
+    if (days !== null && days >= 0 && days < 365) { totalDays += days; countDays++; }
+  });
+  const avgDel = countDays ? Math.round(totalDays / countDays) : null;
+
+  $('k-total').textContent  = orders3m.length;
+  $('k-open').textContent   = open3m.length;
+  $('k-disp').textContent   = disp3m.length;
+  $('k-del').textContent    = avgDel !== null ? avgDel + 'd' : '—';
+  $('k-cust').textContent   = customers.length || '—';
+  $('open-count').textContent = `${orders3m.length} orders`;
+
+  // Enrich orders with product name
+  orders3m.forEach(o => {
+    const code = String(o['Product Code'] || '').trim();
+    if (code && productMap[code] && !o['Product Name']) {
+      o['_productName'] = productMap[code];
+    } else {
+      o['_productName'] = o['Product Name'] || o['Product'] || '';
+    }
+  });
+
+  allOrders = orders3m;
+  D.productMap = productMap;
+  renderOrdersTable(orders3m, qcMap);
+
+  // Delivery table — last 30 dispatched, newest first
+  const dispRecent = [...disp3m].sort((a,b) => {
+    const oid_a = String(a['Order Id']||'').trim();
+    const oid_b = String(b['Order Id']||'').trim();
+    const da = qcMap[oid_a]?.date || a['Order Date'] || '';
+    const db = qcMap[oid_b]?.date || b['Order Date'] || '';
+    return new Date(db) - new Date(da);
+  }).slice(0, 30);
+
+  $('delivery-tbody').innerHTML = dispRecent.length === 0
+    ? '<tr><td colspan="7" class="no-data">No dispatched orders</td></tr>'
+    : dispRecent.map(o => {
+        const oid = String(o['Order Id'] || '').trim();
+        const qEntry = qcMap[oid];
+        const days = calcDays(o['Order Date'] || o['Date'] || o['date'], qEntry?.date);
+        return `<tr>
+          <td class="mono">#${f(oid)}</td>
+          <td class="bold">${f(o['Customer Name'])}</td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f(o['_productName'])}</td>
+          <td>${f(o['Order Date'] || o['Date'] || o['date'])}</td>
+          <td>${f(qEntry?.date)}</td>
+          <td>${deliveryBadge(days)}</td>
+          <td>${qcPill(qEntry?.result)}</td>
+        </tr>`;
+      }).join('');
+
+  // Top customers bar chart (3 months)
+  const custMap2 = {};
+  orders3m.forEach(o => {
+    const c = f(o['Customer Name']);
+    if (c !== '—') custMap2[c] = (custMap2[c]||0) + 1;
+  });
+  const topCust = Object.entries(custMap2).sort((a,b)=>b[1]-a[1]).slice(0,10)
+    .map(([lbl,val]) => ({lbl, val}));
+  barChart('cust-bars', topCust, 'gold');
+}
+
+function renderOrdersTable(orders, qcMap) {
+  const search    = ($('search-orders')?.value || '').toLowerCase();
+  const statusFil = ($('filter-status')?.value || '').toLowerCase();
+
+  let filtered = [...orders];
+
+  // Status filter
+  if (statusFil) {
+    filtered = filtered.filter(o => {
+      const s = String(o['Order Status'] || o['Status'] || '').toLowerCase();
+      return s.includes(statusFil);
+    });
+  }
+
+  // Text search
+  if (search) {
+    filtered = filtered.filter(o =>
+      JSON.stringify(o).toLowerCase().includes(search)
+    );
+  }
+
+  // Sort descending by order date (newest first)
+  filtered.sort((a, b) => {
+    const da = new Date(a['Order Date'] || a['Date'] || 0);
+    const db = new Date(b['Order Date'] || b['Date'] || 0);
+    return db - da;
+  });
+
+  $('open-count').textContent = `${filtered.length} orders`;
+  $('orders-tbody').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="9" class="no-data">No matching orders</td></tr>'
+    : filtered.map(o => {
+        const oid    = String(o['Order Id'] || '').trim();
+        const qEntry = (qcMap||{})[oid];
+        const days   = calcDays(o['Order Date'] || o['Date'] || o['date'], qEntry?.date);
+        const st     = o['Order Status'] || o['Status'] || 'Open';
+        const prod   = o['_productName'] || o['Product Name'] || o['Product'] || '';
+        const pcode  = o['Product Code'] || '';
+        return `<tr>
+          <td class="mono">#${f(oid)}</td>
+          <td class="bold">${f(o['Customer Name'])}</td>
+          <td>${f(o['Order Date'] || o['Date'] || o['date'])}</td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${prod}">${prod || '—'}</td>
+          <td class="mono" style="color:var(--purple);font-size:11px">${f(pcode)}</td>
+          <td>${statusPill(st)}</td>
+          <td>${f(qEntry?.date)}</td>
+          <td class="mono" style="font-size:11px;color:var(--teal)">${f(qEntry?.['SB Invoice'] || qEntry?.['Invoice Number'] || o['_invoice'] || qEntry?.invoice)}</td>
+          <td>${deliveryBadge(days)}</td>
+        </tr>`;
+      }).join('');
+}
+
+function filterOrders() {
+  renderOrdersTable(allOrders, D.qcMap || {});
+}
+
+// ══════════════════════════════════════════════════════
+// TRACEABILITY
+// ══════════════════════════════════════════════════════
+function runTrace() {
+  const query = ($('trace-input')?.value || '').trim().toLowerCase();
+  const el = $('trace-results');
+  if (!query || query.length < 2) {
+    el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--muted)">
+      <div style="font-size:32px;margin-bottom:12px">🔬</div>
+      <div style="font-size:14px;font-weight:600;color:var(--dim)">Enter an invoice or order ID above</div>
+      <div style="font-size:12px;margin-top:6px">Results will appear instantly as you type</div>
+    </div>`;
+    return;
+  }
+
+  const orders   = D.orders   || [];
+  const qc       = D.qc       || [];
+  const rm       = D.rm       || [];
+  const purchases= D.rmPurchases || [];
+  const qcMap    = D.qcMap    || {};
+
+  // Find matching order — by invoice OR order ID
+  let matchedOrder  = null;
+  let matchedQC     = null;
+
+  // Search QC by invoice number
+  matchedQC = qc.find(r => {
+    const inv = String(r['SB Invoice'] || r['Invoice Number'] || r['Invoice Number'] || '').toLowerCase();
+    const oid = String(r['Order Id']  || '').toLowerCase();
+    return inv.includes(query) || oid.includes(query);
+  });
+
+  // Search orders by order ID or via QC match
+  if (matchedQC) {
+    const oid = String(matchedQC['Order Id'] || '').trim();
+    matchedOrder = orders.find(o => String(o['Order Id']||'').trim() === oid);
+  }
+  if (!matchedOrder) {
+    matchedOrder = orders.find(o =>
+      String(o['Order Id']||'').toLowerCase().includes(query) ||
+      String(o['Customer Name']||'').toLowerCase().includes(query)
+    );
+    if (matchedOrder && !matchedQC) {
+      const oid = String(matchedOrder['Order Id']||'').trim();
+      matchedQC = qc.find(r => String(r['Order Id']||r['OrderId']||'').trim() === oid);
+    }
+  }
+
+  if (!matchedOrder && !matchedQC) {
+    el.innerHTML = `<div class="trace-not-found">
+      <div style="font-size:24px;margin-bottom:8px">🔍</div>
+      <div style="font-weight:600;margin-bottom:4px">No results for "${query}"</div>
+      <div style="font-size:11px;opacity:.7">Try the SB Invoice number (e.g. INV-441), Order ID, or customer name</div>
+    </div>`;
+    return;
+  }
+
+  const oid         = String((matchedOrder || matchedQC)?.['Order Id'] || '').trim();
+  const invoice     = matchedQC?.['SB Invoice'] || '—';
+  const orderDate   = matchedOrder?.['Order Date'] || matchedOrder?.['Date'] || '—';
+  const customer    = matchedOrder?.['Customer Name'] || '—';
+  const status      = matchedOrder?.['Order Status'] || matchedOrder?.['Status'] || '—';
+  const dispDate    = matchedQC?.['Date of Dispatch'] || '—';
+  const qcResult    = matchedQC?.['Final QC Pass/Fail'] || '—';
+  const productName = matchedOrder?.['_productName'] || matchedOrder?.['Product Name'] || '—';
+  const productCode = matchedOrder?.['Product Code'] || '—';
+  const days        = calcDays(orderDate, dispDate);
+
+  // Find relevant RM entries — match by order ID in RM data (if linked) or by product code
+  const rmMatches = rm.filter(r => {
+    const rmOid = String(r['Order Id'] || r['OrderId'] || '').trim();
+    const rmProd = String(r['Product Barcode'] || '').trim();
+    return (rmOid && rmOid === oid) ||
+           (productCode && productCode !== '—' && rmProd.includes(productCode));
+  });
+
+  // If no direct match, show recent RM entries for reference
+  const rmDisplay = rmMatches.length > 0 ? rmMatches : rm.slice(0, 5);
+  const rmIsLinked = rmMatches.length > 0;
+
+  // Find purchases matching material used
+  const rmMaterials = new Set(rmDisplay.map(r => String(r['Material Name']||'').trim()).filter(Boolean));
+  const purchaseMatches = purchases.filter(p => {
+    const mat = String(p['Material Name'] || p['Material'] || '').trim();
+    return rmMaterials.has(mat);
+  });
+  const purchaseDisplay = purchaseMatches.length > 0 ? purchaseMatches : purchases.slice(0, 3);
+  const purchaseIsLinked = purchaseMatches.length > 0;
+
+  el.innerHTML = `
+  <div class="trace-found">
+    <div class="trace-found-hdr">
+      <div class="trace-badge">${invoice !== '—' ? invoice : ('#' + oid)}</div>
+      <div>
+        <div class="trace-title">${customer}</div>
+        <div class="trace-sub">Order #${oid} · ${orderDate} → ${dispDate} ${days !== null ? '· ' + days + ' days' : ''}</div>
+      </div>
+      <div style="margin-left:auto">${qcPill(qcResult)}</div>
+    </div>
+
+    <div class="trace-timeline">
+
+      <!-- STEP 1: ORDER -->
+      <div class="trace-step">
+        <div class="trace-step-icon step-order">📦</div>
+        <div class="trace-step-body">
+          <div class="trace-step-label">Step 1 — Order Placed</div>
+          <div class="trace-step-content">
+            <div class="trace-kv"><div class="trace-kv-key">Order ID</div><div class="trace-kv-val mono">#${f(oid)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">Customer</div><div class="trace-kv-val">${f(customer)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">Order Date</div><div class="trace-kv-val">${f(orderDate)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">Status</div><div class="trace-kv-val">${statusPill(status)}</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: PRODUCT -->
+      <div class="trace-step">
+        <div class="trace-step-icon step-product">🏭</div>
+        <div class="trace-step-body">
+          <div class="trace-step-label">Step 2 — Product / Production</div>
+          <div class="trace-step-content">
+            <div class="trace-kv"><div class="trace-kv-key">Product</div><div class="trace-kv-val">${f(productName)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">Product Code</div><div class="trace-kv-val mono" style="color:var(--purple)">${f(productCode)}</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: QC & DISPATCH -->
+      <div class="trace-step">
+        <div class="trace-step-icon step-qc">✅</div>
+        <div class="trace-step-body">
+          <div class="trace-step-label">Step 3 — QC &amp; Dispatch</div>
+          <div class="trace-step-content">
+            <div class="trace-kv"><div class="trace-kv-key">SB Invoice</div><div class="trace-kv-val mono" style="color:var(--teal)">${f(invoice)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">Dispatch Date</div><div class="trace-kv-val">${f(dispDate)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">QC Result</div><div class="trace-kv-val">${qcPill(qcResult)}</div></div>
+            <div class="trace-kv"><div class="trace-kv-key">Delivery Days</div><div class="trace-kv-val">${deliveryBadge(days)}</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: RAW MATERIAL USED -->
+      <div class="trace-step">
+        <div class="trace-step-icon step-rm">🧪</div>
+        <div class="trace-step-body">
+          <div class="trace-step-label">Step 4 — Raw Material Used ${!rmIsLinked ? '<span style="color:var(--amber);font-size:9px;margin-left:6px">⚠ No direct RM link — showing all recent stock</span>' : ''}</div>
+          ${rmDisplay.length === 0
+            ? '<div style="color:var(--muted);font-size:12px">No RM data available</div>'
+            : `<div style="overflow-x:auto"><table style="font-size:12px;margin-top:6px">
+              <thead><tr>
+                <th>Barcode</th><th>Material</th><th>Batch No</th><th>Date</th><th>Supplier</th><th>Shelf</th><th>Qty</th>
+              </tr></thead>
+              <tbody>
+                ${rmDisplay.map(r => `<tr>
+                  <td class="mono">${f(r['Product Barcode']||r['Barcode'])}</td>
+                  <td class="bold">${f(r['Material Name']||r['Material'])}</td>
+                  <td class="mono" style="color:var(--teal)">${f(r['Batch Number']||r['Batch No'])}</td>
+                  <td>${f(r['Date Time']||r['Date'])}</td>
+                  <td>${f(r['Supplier'])}</td>
+                  <td>${f(r['Shelf'])}</td>
+                  <td class="mono">${f(r['Quantity'])}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table></div>`
+          }
+        </div>
+      </div>
+
+      <!-- STEP 5: RM PURCHASE -->
+      <div class="trace-step">
+        <div class="trace-step-icon step-purchase">🛒</div>
+        <div class="trace-step-body">
+          <div class="trace-step-label">Step 5 — RM Purchased ${!purchaseIsLinked ? '<span style="color:var(--amber);font-size:9px;margin-left:6px">⚠ No direct match — showing recent purchases</span>' : ''}</div>
+          ${purchaseDisplay.length === 0
+            ? '<div style="color:var(--muted);font-size:12px">No purchase records found</div>'
+            : `<div style="overflow-x:auto"><table style="font-size:12px;margin-top:6px">
+              <thead><tr>
+                <th>Purchase Date</th><th>Material</th><th>Supplier</th><th>Qty</th><th>Batch</th>
+              </tr></thead>
+              <tbody>
+                ${purchaseDisplay.map(p => `<tr>
+                  <td>${f(p['Date']||p['Purchase Date']||p['Date Time'])}</td>
+                  <td class="bold">${f(p['Material Name']||p['Material']||p['Item'])}</td>
+                  <td>${f(p['Supplier'])}</td>
+                  <td class="mono">${f(p['Quantity']||p['Qty'])}</td>
+                  <td class="mono" style="color:var(--teal)">${f(p['Batch Number']||p['Batch No']||p['Batch'])}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table></div>`
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function clearTrace() {
+  const inp = $('trace-input');
+  if (inp) inp.value = '';
+  runTrace();
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER — QC & DISPATCH
+// ══════════════════════════════════════════════════════
+function renderQC(d) {
+  const orders = d.orders || [];
+  const qc     = d.qc    || [];
+
+  // Build order date map
+  const orderDateMap = {};
+  orders.forEach(o => {
+    const oid = String(o['Order Id'] || '').trim();
+    orderDateMap[oid] = o['Order Date'] || o['Date'] || o['date'];
+  });
+  const customerMap = {};
+  orders.forEach(o => {
+    const oid = String(o['Order Id'] || '').trim();
+    customerMap[oid] = o['Customer Name'] || '';
+  });
+
+  let pass = 0, fail = 0, noResult = 0;
+  const todayStr = today();
+  let dispToday = 0;
+
+  const qcWithDays = qc.map(r => {
+    const oid = String(r['Order Id'] || r['OrderId'] || '').trim();
+    const dispDate = r['Date of Dispatch'] || r['Dispatch Date'] || r['Dispatch date'] || '';
+    const orderDate = orderDateMap[oid] || '';
+    const days = calcDays(orderDate, dispDate);
+    const result = String(r['Final QC Pass/Fail'] || r['QC Result'] || '');
+    if (result.toLowerCase().includes('pass') || result === 'TRUE') pass++;
+    else if (result.toLowerCase().includes('fail') || result === 'FALSE') fail++;
+    else noResult++;
+    if (dispDate && dispDate.toString().startsWith(todayStr)) dispToday++;
+    return { ...r, _oid: oid, _days: days, _customer: customerMap[oid] || '' };
+  });
+
+  $('k-qc-total').textContent    = qc.length;
+  $('k-qc-pass').textContent     = pass;
+  $('k-qc-fail').textContent     = fail;
+  $('k-disp-today').textContent  = dispToday;
+  $('qc-count').textContent      = `${qc.length} records`;
+
+  allQC = qcWithDays;
+  renderQCTable(qcWithDays);
+
+  // QC bars
+  barChart('qc-bars', [
+    {lbl:'Pass', val:pass},
+    {lbl:'Fail', val:fail},
+    {lbl:'No Result', val:noResult},
+  ], 'green');
+
+  // Delivery bucket bars
+  let b0=0, b7=0, b14=0, b30=0;
+  qcWithDays.forEach(r => {
+    const d = r._days;
+    if (d === null) return;
+    if (d <= 7) b0++;
+    else if (d <= 14) b7++;
+    else if (d <= 30) b14++;
+    else b30++;
+  });
+  barChart('del-bars', [
+    {lbl:'≤ 7 days', val:b0},
+    {lbl:'8–14 days', val:b7},
+    {lbl:'15–30 days', val:b14},
+    {lbl:'> 30 days', val:b30},
+  ], 'teal');
+}
+
+function renderQCTable(qcData) {
+  const search = ($('search-qc')?.value || '').toLowerCase();
+  const filtered = search
+    ? qcData.filter(r => JSON.stringify(r).toLowerCase().includes(search))
+    : qcData;
+  const display = filtered.slice(-60).reverse();
+  $('qc-tbody').innerHTML = display.length === 0
+    ? '<tr><td colspan="5" class="no-data">No QC records</td></tr>'
+    : display.map(r => `<tr>
+        <td class="mono">#${f(r._oid)}</td>
+        <td>${f(r['Date of Dispatch'] || r['Dispatch Date'])}</td>
+        <td>${f(r['SB Invoice'] || r['Invoice Number'])}</td>
+        <td>${qcPill(r['Final QC Pass/Fail'] || r['QC Result'])}</td>
+        <td>${deliveryBadge(r._days)}</td>
+      </tr>`).join('');
+}
+
+function filterQC() { renderQCTable(allQC); }
+
+// ══════════════════════════════════════════════════════
+// RENDER — RAW MATERIAL
+// ══════════════════════════════════════════════════════
+function renderRM(d) {
+  const rm        = d.rm        || [];
+  const rmSummary = d.rmSummary || [];
+  const purchases = d.rmPurchases || [];
+
+  $('k-rm-total').textContent     = d.summary?.totalRmEntries || rm.length;
+  $('k-rm-mats').textContent      = d.summary?.totalRmMaterials || rmSummary.length;
+  $('k-rm-purchases').textContent = purchases.length;
+
+  // Total inward qty
+  const totalInQty = rmSummary.reduce((s, r) => s + (parseFloat(r.totalQty)||0), 0);
+  $('k-rm-in').textContent = totalInQty > 0 ? totalInQty.toLocaleString('en-IN') : rm.length;
+  $('rm-in-count').textContent = `${rm.length} entries`;
+
+  // Inward table
+  $('rm-in-tbody').innerHTML = rm.length === 0
+    ? '<tr><td colspan="7" class="no-data">No RM entries</td></tr>'
+    : rm.map(r => `<tr>
+        <td class="mono">${f(r['Product Barcode'] || r['Barcode'])}</td>
+        <td>${f(r['Date Time'] || r['Date'])}</td>
+        <td class="bold">${f(r['Material Name'] || r['Material'])}</td>
+        <td>${f(r['Supplier'])}</td>
+        <td>${f(r['Batch Number'] || r['Batch No'])}</td>
+        <td>${f(r['Shelf'])}</td>
+        <td class="mono">${f(r['Quantity'])}</td>
+      </tr>`).join('');
+
+  // Bar chart — by material
+  const barData = rmSummary.slice(0,12).map(r => ({lbl: r.material, val: parseFloat(r.totalQty)||r.entries}));
+  barChart('rm-bars', barData, 'teal');
+
+  // Tally: inward vs outwards (purchases vs sales if available)
+  const rmSalesTotal = (d.rmSales||[]).reduce((s,r) => s + (parseFloat(r['Quantity']||r['Qty'])||0), 0);
+  const rmInTotal    = totalInQty;
+  const balance      = rmInTotal - rmSalesTotal;
+
+  const tallyItems = rmSummary.slice(0,8).map(r => ({
+    material: r.material,
+    inward: parseFloat(r.totalQty)||0,
+    entries: r.entries
+  }));
+
+  $('rm-tally-wrap').innerHTML = tallyItems.length === 0
+    ? '<div class="no-data">No tally data</div>'
+    : tallyItems.map(item => `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f2f5;">
+        <div style="font-weight:500; color:var(--text); width:140px; font-size:12px">${item.material}</div>
+        <div style="text-align:center;">
+          <div style="font-family:'DM Mono',monospace; color:var(--green); font-size:13px">${item.inward.toLocaleString('en-IN')}</div>
+          <div style="font-size:10px; color:var(--muted)">inward</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'DM Mono',monospace; color:var(--muted); font-size:13px">${item.entries}</div>
+          <div style="font-size:10px; color:var(--muted)">entries</div>
+        </div>
+      </div>`).join('');
+
+  // Purchases table
+  $('rm-purchase-tbody').innerHTML = purchases.length === 0
+    ? '<tr><td colspan="5" class="no-data">No purchase records</td></tr>'
+    : purchases.slice(-40).reverse().map(r => `<tr>
+        <td>${f(r['Date'] || r['Date Time'] || r['Purchase Date'])}</td>
+        <td class="bold">${f(r['Material Name'] || r['Material'] || r['Item'] || r['Product'])}</td>
+        <td>${f(r['Supplier'])}</td>
+        <td class="mono">${f(r['Quantity'] || r['Qty'])}</td>
+        <td>${f(r['Batch Number'] || r['Batch No'] || r['Batch'])}</td>
+      </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER — MAINTENANCE
+// ══════════════════════════════════════════════════════
+function renderMaint(d) {
+  const molds   = d.molds     || [];
+  const machines = d.machines || [];
+  const equip    = d.equipment || [];
+
+  const moldBDs = molds.filter(r => String(r['Type of Maintenance']||'').toLowerCase().includes('break'));
+
+  $('k-m-mold').textContent   = molds.length;
+  $('k-m-bd').textContent     = moldBDs.length;
+  $('k-m-mach').textContent   = machines.length;
+  $('k-m-equip').textContent  = equip.length;
+  $('mold-count').textContent = `${molds.length} records`;
+  $('mach-count').textContent = `${machines.length} records`;
+  $('equip-count').textContent= `${Math.min(equip.length,30)} of ${equip.length}`;
+
+  // Mold table
+  $('mold-tbody').innerHTML = molds.length === 0
+    ? '<tr><td colspan="6" class="no-data">No mold data</td></tr>'
+    : molds.slice(-50).reverse().map(r => `<tr>
+        <td>${f(r['Date Time Stamp'])}</td>
+        <td class="bold">${f(r['Product Name'] || r['Mold Name'])}</td>
+        <td class="mono">${f(r['Mold Number'])}</td>
+        <td>${maintenancePill(r['Type of Maintenance'])}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f(r['What broke down'])}">${f(r['What broke down'])}</td>
+        <td>${f(r['Employee Code'])}</td>
+      </tr>`).join('');
+
+  // Machine table
+  $('mach-tbody').innerHTML = machines.length === 0
+    ? '<tr><td colspan="7" class="no-data">No machine data</td></tr>'
+    : machines.slice(-60).reverse().map(r => `<tr>
+        <td>${f(r['Date Time Stamp'])}</td>
+        <td class="bold">${f(r['Machine Name'])}</td>
+        <td>${maintenancePill(r['Type of Maintenance'])}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f(r['What broke down'])}">${f(r['What broke down'])}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f(r['Root Cause Analysis'])}">${f(r['Root Cause Analysis'])}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f(r['Preventive Actions'])}">${f(r['Preventive Actions'])}</td>
+        <td>${f(r['Employee Code'])}</td>
+      </tr>`).join('');
+
+  // Equipment table (last 30)
+  const equipRecent = equip.slice(-30).reverse();
+  // Render mold images
+  renderMoldImages(molds, APPS_SCRIPT_URL);
+
+  $('equip-tbody').innerHTML = equipRecent.length === 0
+    ? '<tr><td colspan="6" class="no-data">No equipment data</td></tr>'
+    : equipRecent.map(r => `<tr>
+        <td>${f(r['Date Time Stamp'])}</td>
+        <td class="bold">${f(r['Equipment Name'])}</td>
+        <td>${maintenancePill(r['Type of Maintenance'])}</td>
+        <td>${f(r['Visual Check'] || r['Status'] || 'Ok') === 'Ok'
+          ? '<span class="pill pill-pass">Ok</span>'
+          : f(r['Visual Check'] || r['Status'])}</td>
+        <td>${f(r['Frequency'])}</td>
+        <td>${f(r['Employee Code'])}</td>
+      </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER — DAILY MACHINE
+// ══════════════════════════════════════════════════════
+function renderDaily(d) {
+  const daily = d.dailyMachine || [];
+
+  $('k-dm-total').textContent = daily.length;
+
+  const now = new Date();
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const monthRecs = daily.filter(r => {
+    const dt = String(r['Date Time Stamp'] || '');
+    return dt.includes(thisMonth) || dt.includes(now.getMonth()+1 + '/' + now.getFullYear().toString().slice(-2));
+  });
+  $('k-dm-month').textContent = monthRecs.length;
+
+  const latest = daily.length > 0 ? daily[daily.length-1] : null;
+  $('k-dm-last').textContent = latest ? String(latest['Date Time Stamp']).split(' ')[0] : '—';
+  $('k-dm-who').textContent  = latest ? f(latest['Final Check By']) : '—';
+  $('daily-count').textContent = `${daily.length} records`;
+
+  // Daily table — last 30
+  const display = daily.slice(-30).reverse();
+  $('daily-tbody').innerHTML = display.length === 0
+    ? '<tr><td colspan="7" class="no-data">No daily records</td></tr>'
+    : display.map(r => {
+        const cleaning = r['Overall Cleaning'];
+        const ystr     = r['Y strainer Cleaning'];
+        const oil      = r['Oil Level'];
+        const checkBy  = r['Final Check By'];
+
+        // Count TRUE values for Unit 1 cleaning cols
+        const u1cols = ['HC - 125A (Unit 1)a','HC - 160A (Unit 1)a','HC - 250A (Unit 1)a',
+                        'Bole - 200A (Unit 1)a','Bole - 200B (Unit 1)a','Bole - 120A (Unit 1)a'];
+        const u2cols = ['HC - 80A (Unit 2)a','HC - 80B (Unit 2)a','HC - 125B (Unit 2)a',
+                        'HC - 160B (Unit 2)a','HC - 160C (Unit 2)a','HC - 160D (Unit 2)a'];
+        const u1ok = u1cols.filter(c => r[c] === true || r[c] === 'TRUE').length;
+        const u2ok = u2cols.filter(c => r[c] === true || r[c] === 'TRUE').length;
+
+        return `<tr>
+          <td class="mono">${f(r['Date Time Stamp'])}</td>
+          <td>${cleaning === 'Start' ? '<span class="pill pill-open">Start</span>' : f(cleaning)}</td>
+          <td>${ystr === 'Start' ? '<span class="pill pill-open">Start</span>' : f(ystr)}</td>
+          <td>${oil ? `<span style="font-family:'DM Mono',monospace;color:var(--gold)">${oil}</span>` : '—'}</td>
+          <td>${checkBy ? `<span style="font-weight:600;color:var(--text)">${checkBy}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+          <td><span class="pill ${u1ok >= 5 ? 'pill-pass' : 'pill-hold'}">${u1ok}/${u1cols.length}</span></td>
+          <td><span class="pill ${u2ok >= 5 ? 'pill-pass' : 'pill-hold'}">${u2ok}/${u2cols.length}</span></td>
+        </tr>`;
+      }).join('');
+
+  // Oil level bars for latest record
+  if (latest) {
+    const u1machines = [
+      ['HC-125A', 'HC - 125A (Unit 1)c'],
+      ['HC-160A', 'HC - 160A (Unit 1)c'],
+      ['HC-250A', 'HC - 250A (Unit 1)c'],
+      ['HC-250DC','HC - 250DC (Unit 1)c'],
+      ['Bole-200A','Bole - 200A (Unit 1)c'],
+      ['Bole-200B','Bole - 200B (Unit 1)c'],
+      ['Bole-120A','Bole - 120A (Unit 1)c'],
+    ];
+    const u2machines = [
+      ['HC-80A',   'HC - 80A (Unit 2)c'],
+      ['HC-80B',   'HC - 80B (Unit 2)c'],
+      ['HC-125B',  'HC - 125B (Unit 2)c'],
+      ['HC-160B',  'HC - 160B (Unit 2)c'],
+      ['HC-160C',  'HC - 160C (Unit 2)c'],
+      ['HC-160D',  'HC - 160D (Unit 2)c'],
+      ['Bole-250B','Bole - 250B (Unit 2)c'],
+      ['HC-250C',  'HC - 250C (Unit 2)c'],
+      ['Bole-300A','Bole - 300A (Unit 2)c'],
+    ];
+
+    const toBarData = (machList, rec) => machList.map(([lbl, col]) => {
+      const v = rec[col];
+      const pct = v ? parseInt(String(v).replace('%',''))||0 : 0;
+      return {lbl, val: pct};
+    });
+
+    barChart('oil-bars-u1', toBarData(u1machines, latest), 'gold', '%');
+    barChart('oil-bars-u2', toBarData(u2machines, latest), 'blue', '%');
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+// MOLD BREAKDOWN IMAGES
+// ══════════════════════════════════════════════════════
+function renderMoldImages(molds, appsScriptBase) {
+  const wrap = $('mold-images-wrap');
+  if (!wrap) return;
+
+  // Get records that have at least one image
+  const records = molds.filter(r =>
+    r['Image Before (Break Down)'] || r['Image After (Break Down)'] ||
+    r['Image Before (Preventive)'] || r['Image After (Preventive)']
+  );
+
+  if (records.length === 0) {
+    wrap.innerHTML = `<div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:32px;text-align:center;color:#9ca3af">
+      <div style="font-size:24px;margin-bottom:8px">📷</div>
+      <div style="font-weight:600;color:#6b7280">No breakdown photos found</div>
+      <div style="font-size:11px;margin-top:4px">Images will appear here when mold breakdown records include photos</div>
+    </div>`;
+    return;
+  }
+
+  // Google Sheets image URL base
+  // The image paths in the sheet look like: "Mold Data_Images/abc123.Final Image.jpg"
+  // We need the Apps Script to serve them, OR we use the direct Google Drive URL pattern
+  // For now we'll try to construct URLs from the path stored in the sheet
+
+  const base = appsScriptBase
+    ? appsScriptBase.replace('/exec', '') + '/exec?action=image&path='
+    : null;
+
+  wrap.innerHTML = '<div class="img-gallery">' + records.slice(0, 20).map(r => {
+    const isBD  = String(r['Type of Maintenance']||'').toLowerCase().includes('break');
+    const title = r['Product Name'] || r['Mold Name'] || r['Mold Number'] || 'Mold';
+    const date  = r['Date Time Stamp'] || '';
+    const issue = r['What broke down'] || '';
+    const tag   = isBD
+      ? `<span class="img-breakdown-tag">⚡ Breakdown</span>`
+      : `<span class="img-preventive-tag">✓ Preventive</span>`;
+
+    const imgBefore = r['Image Before (Break Down)'] || r['Image Before (Preventive)'] || '';
+    const imgAfter  = r['Image After (Break Down)']  || r['Image After (Preventive)']  || '';
+
+    function imgTag(path) {
+      if (!path) return `<div class="img-placeholder">📷</div>`;
+      // Try to load via Apps Script image proxy
+      const url = base ? base + encodeURIComponent(path) : '';
+      return url
+        ? `<img src="${url}" alt="Mold image" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'" onclick="openLightbox(this.src)" title="${path}">`
+           + `<div class="img-placeholder" style="display:none">📷</div>`
+        : `<div class="img-placeholder" title="${path}">📷</div>`;
+    }
+
+    return `<div class="img-card">
+      <div class="img-card-hdr">
+        <div class="img-card-title">${title} ${r['Mold Number'] ? '· #'+r['Mold Number'] : ''}</div>
+        <div class="img-card-sub">${date}${issue ? ' · ' + issue : ''} &nbsp; ${tag}</div>
+      </div>
+      <div class="img-pair">
+        <div class="img-slot">
+          <div class="img-slot-label">Before</div>
+          ${imgTag(imgBefore)}
+        </div>
+        <div class="img-slot">
+          <div class="img-slot-label">After</div>
+          ${imgTag(imgAfter)}
+        </div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function openLightbox(src) {
+  $('lightbox-img').src = src;
+  $('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  $('lightbox').classList.remove('open');
+  $('lightbox-img').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+// ══════════════════════════════════════════════════════
+// FETCH & RENDER
+// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// CSV PARSER
+// ══════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQ && text[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      lines[lines.length - 1].push(cur); cur = '';
+    } else if ((ch === '\n' || ch === '\r') && !inQ) {
+      if (ch === '\r' && text[i+1] === '\n') i++;
+      lines[lines.length - 1].push(cur); cur = '';
+      lines.push([]);
+    } else {
+      cur += ch;
+    }
+    if (lines.length === 0) lines.push([]);
+  }
+  lines[lines.length - 1].push(cur);
+  const filtered = lines.filter(r => r.some(c => c.trim() !== ''));
+  if (filtered.length < 2) return [];
+  const headers = filtered[0].map(h => h.trim());
+  return filtered.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (row[i] || '').trim(); });
+    return obj;
+  });
+}
+
+async function fetchCSV(url, cacheBust = true) {
+  if (!url) return [];
+  const u = cacheBust ? url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now() : url;
+  try {
+    const res = await fetch(u, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    return parseCSV(text);
+  } catch (e) {
+    console.warn('CSV fetch failed:', url, e.message);
+    return [];
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// FETCH ALL — reads live CSVs, falls back to Apps Script
+// ══════════════════════════════════════════════════════
+async function fetchAll() {
+  $('live-dot').className = 'live-dot';
+  $('live-txt').textContent = 'Loading…';
+
+  try {
+    // Fetch all CSV sources in parallel
+    const [customers, orders, orderDetails, products,
+           qcRaw, rmRaw, rmPurchasesRaw,
+           moldsRaw, machinesRaw, equipRaw, dailyRaw] = await Promise.all([
+      fetchCSV(CSV_URLS.customers),
+      fetchCSV(CSV_URLS.orders),
+      fetchCSV(CSV_URLS.orderDetails),
+      fetchCSV(CSV_URLS.products),
+      fetchCSV(CSV_URLS.qc),
+      fetchCSV(CSV_URLS.rm),
+      fetchCSV(CSV_URLS.rmPurchases),
+      fetchCSV(CSV_URLS.moldData),
+      fetchCSV(CSV_URLS.machineData),
+      fetchCSV(CSV_URLS.equipData),
+      fetchCSV(CSV_URLS.dailyMachine),
+    ]);
+
+    // If Apps Script URL provided, fetch it too and merge any extra data
+    let scriptData = {};
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.startsWith('http')) {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now());
+        scriptData = await res.json();
+      } catch(e) { console.warn('Apps Script fetch failed:', e.message); }
+    }
+
+    // Build product lookup: ProductId → { name, code }
+    const productById = {};
+    const productByCode = {};
+    products.forEach(p => {
+      const id   = (p['Product Id'] || '').trim();
+      const name = (p['Product Name'] || '').trim();
+      const code = (p['Product Code'] || '').trim();
+      if (id)   productById[id]   = { name, code };
+      if (code) productByCode[code] = name;
+    });
+
+    // Enrich order details with product names
+    orderDetails.forEach(od => {
+      const pId = (od['Product Name'] || od['Product Id'] || '').trim();
+      if (productById[pId]) {
+        od['_productName'] = productById[pId].name;
+        od['_productCode'] = productById[pId].code;
+      } else {
+        od['_productName'] = od['Product Name (2)'] || od['Product Name'] || '';
+        od['_productCode'] = '';
+      }
+    });
+
+    // Build order → product lookup (join orders with order details)
+    const orderProductMap = {};
+    orderDetails.forEach(od => {
+      const oid = (od['Order Id'] || '').trim();
+      if (oid && !orderProductMap[oid]) {
+        orderProductMap[oid] = {
+          productName: od['_productName'] || od['Product Name (2)'] || '',
+          productCode: od['_productCode'] || '',
+          qty:         od['Quantity'] || '',
+          color:       od['Product Color'] || '',
+        };
+      }
+    });
+
+    // Enrich orders
+    orders.forEach(o => {
+      const oid = (o['Order Id'] || '').trim();
+      const prod = orderProductMap[oid];
+      if (prod) {
+        o['_productName'] = prod.productName;
+        o['_productCode'] = prod.productCode;
+        o['_qty']         = prod.qty;
+        o['_color']       = prod.color;
+      }
+      // Normalise status field
+      o['Order Status'] = o['Order Status'] || o['Status'] || '';
+      // Normalise date
+      o['Order Date'] = o['Order Date'] || o['Date'] || o['date'] || '';
+      // Invoice
+      o['_invoice'] = o['Invoice Number'] || o['SB Invoice'] || '';
+    });
+
+    // Build RM summary by material
+    const rmByMat = {};
+    rmRaw.forEach(r => {
+      const mat = (r['Material Name'] || r['Material'] || 'Unknown').trim();
+      const qty = parseFloat(r['Quantity']) || 0;
+      if (!rmByMat[mat]) rmByMat[mat] = { material: mat, totalQty: 0, entries: 0, supplier: r['Supplier'] || '' };
+      rmByMat[mat].totalQty += qty;
+      rmByMat[mat].entries++;
+    });
+    const rmSummary = Object.values(rmByMat).sort((a,b) => b.totalQty - a.totalQty);
+
+    // Assemble data object — CSV data takes priority, Apps Script fills gaps
+    D = {
+      customers:    customers.length    ? customers    : (scriptData.customers    || []),
+      orders:       orders.length       ? orders       : (scriptData.orders       || []),
+      orderDetails: orderDetails.length ? orderDetails : (scriptData.orderDetails || []),
+      products:     products.length     ? products     : (scriptData.products     || []),
+      qc:           qcRaw.length        ? qcRaw        : (scriptData.qc           || []),
+      rm:           rmRaw.length        ? rmRaw        : (scriptData.rm           || []),
+      rmSummary,
+      rmPurchases:  rmPurchasesRaw.length ? rmPurchasesRaw : (scriptData.rmPurchases || []),
+      rmSales:      scriptData.rmSales  || [],
+      molds:        moldsRaw.length     ? moldsRaw     : (scriptData.molds        || []),
+      machines:     machinesRaw.length  ? machinesRaw  : (scriptData.machines     || []),
+      equipment:    equipRaw.length     ? equipRaw     : (scriptData.equipment    || []),
+      dailyMachine: dailyRaw.length     ? dailyRaw     : (scriptData.dailyMachine || []),
+      summary:      scriptData.summary  || {},
+      productById,
+      productByCode,
+      orderProductMap,
+    };
+
+    D.qcMap = buildQCMap(D.qc, D.orders);
+
+    // Count live sources
+    const liveSources = Object.entries(CSV_URLS).filter(([k,v]) => v).length;
+    const loadedRows  = orders.length + customers.length + orderDetails.length + products.length;
+
+    renderAll(D);
+
+    $('live-txt').textContent = 'Live · ' + new Date().toLocaleTimeString('en-IN');
+    $('live-dot').className = 'live-dot';
+    $('footer-ts').textContent =
+      `Stallion Barware · ${loadedRows.toLocaleString('en-IN')} rows loaded · Updated ${new Date().toLocaleString('en-IN')} · Auto-refresh ${REFRESH_SEC}s`;
+
+    ['sales','qc','rm','maint','daily'].forEach(t => {
+      const el = $('err-' + t);
+      if (el) el.style.display = 'none';
+    });
+
+  } catch(e) {
+    $('live-dot').className = 'live-dot err';
+    $('live-txt').textContent = 'Error';
+    console.error('fetchAll error:', e);
+    const msg = '⚠ Could not load data: ' + e.message;
+    ['sales','qc','rm','maint','daily'].forEach(t => {
+      const el = $('err-' + t);
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    });
+  }
+}
+
+function buildQCMap(qc, orders) {
+  const map = {};
+  qc.forEach(r => {
+    const oid = String(r['Order Id'] || r['OrderId'] || '').trim();
+    if (oid) map[oid] = r;
+  });
+  return map;
+}
+
+function renderAll(d) {
+  renderSales(d);
+  renderQC(d);
+  renderRM(d);
+  renderMaint(d);
+  renderDaily(d);
+}
+
+// ══════════════════════════════════════════════════════
+// COUNTDOWN
+// ══════════════════════════════════════════════════════
+function startCountdown() {
+  clearInterval(timer);
+  countdown = REFRESH_SEC;
+  timer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) { fetchAll(); countdown = REFRESH_SEC; }
+  }, 1000);
+}
+
+// ══════════════════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════════════════
+function buildDemoData() {
+  const td = today();
+  return {
+    summary: { openOrdersCount:12, todayDispatchCount:3, totalQcRecords:87, totalRmEntries:42, totalRmMaterials:8 },
+    orders: [
+      {'Order Id':'SB-2901','Customer Name':'Taj Hotels','Order Date':'2025-05-01','Order Status':'Open'},
+      {'Order Id':'SB-2902','Customer Name':'Carlsberg','Order Date':'2025-05-03','Order Status':'In Progress'},
+      {'Order Id':'SB-2903','Customer Name':'Air India','Order Date':'2025-04-20','Order Status':'Dispatched'},
+      {'Order Id':'SB-2904','Customer Name':'Burger King','Order Date':'2025-05-05','Order Status':'Open'},
+      {'Order Id':'SB-2905','Customer Name':'Bisleri','Order Date':'2025-05-06','Order Status':'Pending'},
+      {'Order Id':'SB-2906','Customer Name':'Vistara','Order Date':'2025-04-18','Order Status':'Dispatched'},
+      {'Order Id':'SB-2907','Customer Name':'Sula Vineyards','Order Date':'2025-05-08','Order Status':'Open'},
+      {'Order Id':'SB-2908','Customer Name':'Royal Enfield','Order Date':'2025-04-25','Order Status':'Dispatched'},
+      {'Order Id':'SB-2909','Customer Name':'United Breweries','Order Date':'2025-05-10','Order Status':'Open'},
+      {'Order Id':'SB-2910','Customer Name':'Deloitte','Order Date':'2025-05-12','Order Status':'Open'},
+    ],
+    customers: Array.from({length:352},(_,i)=>({'Customer Code':'SB'+String(i+1).padStart(3,'0')})),
+    qc: [
+      {'Order Id':'SB-2903','Date of Dispatch':'2025-04-29','SB Invoice':'INV-441','Final QC Pass/Fail':'Pass'},
+      {'Order Id':'SB-2906','Date of Dispatch':'2025-04-25','SB Invoice':'INV-440','Final QC Pass/Fail':'Pass'},
+      {'Order Id':'SB-2908','Date of Dispatch':'2025-05-01','SB Invoice':'INV-442','Final QC Pass/Fail':'Pass'},
+    ],
+    rm: [
+      {'Product Barcode':'RM-001','Date Time':'2025-05-15 09:00','Material Name':'RH Granules','Supplier':'Polyplastics','Batch Number':'B-221','Shelf':'A1','Quantity':'500'},
+      {'Product Barcode':'RM-002','Date Time':'2025-05-14 11:00','Material Name':'PC Resin','Supplier':'Covestro','Batch Number':'B-220','Shelf':'B2','Quantity':'300'},
+      {'Product Barcode':'RM-003','Date Time':'2025-05-13 10:00','Material Name':'PP Granules','Supplier':'IOCL','Batch Number':'B-219','Shelf':'A3','Quantity':'600'},
+      {'Product Barcode':'RM-004','Date Time':'2025-05-12 14:00','Material Name':'IML Film','Supplier':'Sun Labels','Batch Number':'B-218','Shelf':'C1','Quantity':'200'},
+      {'Product Barcode':'RM-005','Date Time':'2025-05-10 09:00','Material Name':'Tritan Resin','Supplier':'Eastman','Batch Number':'B-217','Shelf':'D2','Quantity':'150'},
+    ],
+    rmSummary: [
+      {material:'RH Granules',totalQty:2400,entries:12},
+      {material:'PC Resin',totalQty:1800,entries:9},
+      {material:'PP Granules',totalQty:3200,entries:16},
+      {material:'IML Film',totalQty:800,entries:6},
+      {material:'Tritan Resin',totalQty:600,entries:4},
+      {material:'PS Granules',totalQty:450,entries:3},
+      {material:'CH Material',totalQty:320,entries:2},
+      {material:'LED Components',totalQty:120,entries:1},
+    ],
+    rmPurchases: [
+      {'Date':'2025-05-15','Material Name':'RH Granules','Supplier':'Polyplastics','Quantity':'500 kg','Batch Number':'B-221'},
+      {'Date':'2025-05-10','Material Name':'PP Granules','Supplier':'IOCL','Quantity':'600 kg','Batch Number':'B-219'},
+    ],
+    rmSales: [],
+    molds: [
+      {'Date Time Stamp':'2025-05-25','Product Name':'Sipper Lid','Mold Number':'7187','Type of Maintenance':'Preventive','What broke down':'','Employee Code':'Golu'},
+      {'Date Time Stamp':'2025-04-24','Product Name':'RH 500ml Tiffin','Mold Number':'7222','Type of Maintenance':'Preventive','What broke down':'','Employee Code':'Golu'},
+      {'Date Time Stamp':'2025-03-04','Product Name':'2/3 Stone Tray','Mold Number':'7108','Type of Maintenance':'Breakdown','What broke down':'Water Line Jam','Employee Code':''},
+      {'Date Time Stamp':'2025-01-10','Product Name':'Sparky Wine Glass','Mold Number':'7283','Type of Maintenance':'Breakdown','What broke down':'Mold rusted from long run','Employee Code':'Golu'},
+    ],
+    machines: [
+      {'Date Time Stamp':'2025-03-04','Machine Name':'HC - 160D (Unit 2)','Type of Maintenance':'Breakdown','What broke down':'Heater','Root Cause Analysis':'Heater wire loose','Preventive Actions':'Wire replaced','Employee Code':''},
+      {'Date Time Stamp':'2025-02-08','Machine Name':'HC - 160C (Unit 2)','Type of Maintenance':'Breakdown','What broke down':'Screw jam','Root Cause Analysis':'Heater out of order','Preventive Actions':'Heater checked','Employee Code':'Danice'},
+      {'Date Time Stamp':'2024-11-01','Machine Name':'HC - 160D (Unit 2)','Type of Maintenance':'Breakdown','What broke down':'Lubrication seals','Root Cause Analysis':'Old chipped seals','Preventive Actions':'Replaced','Employee Code':'Danice'},
+    ],
+    equipment: Array.from({length:30},(_,i)=>({
+      'Date Time Stamp': `2025-05-${String(24-Math.floor(i/17)).padStart(2,'0')}`,
+      'Equipment Name': ['Crane - Outside Gate (Unit 1)','Crane - Molding Shop (Unit 1)','Cooling Tower (Unit 1)','Air Compressor A (Unit 1)','Mold Rack A (Unit 1)'][i%5],
+      'Type of Maintenance': 'Preventive',
+      'Visual Check': 'Ok',
+      'Frequency': 'Weekly',
+      'Employee Code': 'Danice'
+    })),
+    dailyMachine: Array.from({length:30},(_,i)=>{
+      const d = new Date(2025,4,27-i);
+      const ds = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+      return {
+        'Date Time Stamp': ds,
+        'Overall Cleaning': 'Start',
+        'Y strainer Cleaning': 'Start',
+        'Oil Level': 'Start',
+        'Final Check By': i%3===0 ? 'Nishith' : 'Danice',
+        'HC - 125A (Unit 1)a': true, 'HC - 160A (Unit 1)a': true, 'HC - 250A (Unit 1)a': true,
+        'Bole - 200A (Unit 1)a': true, 'Bole - 200B (Unit 1)a': true, 'Bole - 120A (Unit 1)a': true,
+        'HC - 80A (Unit 2)a': true, 'HC - 80B (Unit 2)a': true, 'HC - 125B (Unit 2)a': true,
+        'HC - 160B (Unit 2)a': true, 'HC - 160C (Unit 2)a': true, 'HC - 160D (Unit 2)a': true,
+        'HC - 125A (Unit 1)c': '95%', 'HC - 160A (Unit 1)c': '90%', 'HC - 250A (Unit 1)c': '85%',
+        'HC - 250DC (Unit 1)c': '90%', 'Bole - 200A (Unit 1)c': '85%', 'Bole - 200B (Unit 1)c': '90%',
+        'Bole - 120A (Unit 1)c': '80%',
+        'HC - 80A (Unit 2)c': '85%', 'HC - 80B (Unit 2)c': '90%', 'HC - 125B (Unit 2)c': '95%',
+        'HC - 160B (Unit 2)c': '85%', 'HC - 160C (Unit 2)c': '80%', 'HC - 160D (Unit 2)c': '85%',
+        'Bole - 250B (Unit 2)c': '90%', 'HC - 250C (Unit 2)c': '85%', 'Bole - 300A (Unit 2)c': '90%',
+      };
+    }),
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+fetchAll();
+startCountdown();
+</script>
+</body>
+</html>
