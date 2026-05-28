@@ -3001,55 +3001,67 @@ async function loadTeamData() {
     today.setHours(0,0,0,0);
 
     // ── Build daily entry counts per person ──
-    // Clare: Sales orders by Order Date
+    // Clare: Sales orders -- valid = has Customer Name
     const clareDays = {};
     orders.forEach(o => {
       const dt = new Date(o['Order Date']||o['Date']||'');
-      if (isNaN(dt)||dt<cutoff) return;
+      const cust = (o['Customer Name']||'').trim();
+      if (isNaN(dt)||dt<cutoff||!cust) return;
       const k = dayKey(dt);
       clareDays[k] = (clareDays[k]||0) + 1;
     });
 
-    // Aarti: RM inward by Date Time
+    // Aarti: RM inward -- valid = qty > 0 and has material name
     const aartiDays = {};
     rm.forEach(r => {
       const dt = new Date(r['Date Time']||r['Date']||'');
-      if (isNaN(dt)||dt<cutoff) return;
+      const qty = parseFloat(r['Quantity']||0);
+      const mat = (r['Material Name']||r['Material']||'').trim();
+      if (isNaN(dt)||dt<cutoff||qty<=0||!mat) return;
       const k = dayKey(dt);
       aartiDays[k] = (aartiDays[k]||0) + 1;
     });
 
-    // Babita: Production by Date
+    // Babita: Production -- valid = Production qty > 0 (skip Sunday/no material/blank)
     const babitaDays = {};
     prod.forEach(r => {
       const dt = new Date(r['Date']||'');
+      const qty = parseFloat(r['Production']||0);
+      const reason = (r['Reason for rejection']||r['Reason']||'').toLowerCase();
       if (isNaN(dt)||dt<cutoff) return;
       if (!isWorkingDay(dt)) return;
+      if (qty <= 0) return;
+      if (reason.includes('sunday')||reason.includes('material')||reason.includes('holiday')) return;
       const k = dayKey(dt);
       babitaDays[k] = (babitaDays[k]||0) + 1;
     });
 
-    // Danice: Daily machine maintenance by Date
+    // Danice: Daily machine check -- valid = has Final Check By
     const daniceDays = {};
     daily.forEach(r => {
       const dt = new Date(r['Date Time Stamp']||r['Date']||'');
-      if (isNaN(dt)||dt<cutoff) return;
+      const checker = (r['Final Check By']||'').trim();
+      if (isNaN(dt)||dt<cutoff||!checker) return;
       const k = dayKey(dt);
       daniceDays[k] = (daniceDays[k]||0) + 1;
     });
-    // Also count mold+machine maintenance
+    // Also count mold+machine maintenance with actual work type
     [...molds,...machines].forEach(r => {
       const dt = new Date(r['Date Time Stamp']||r['Date']||'');
-      if (isNaN(dt)||dt<cutoff) return;
+      const mtype = (r['Type of Maintenance']||'').trim();
+      if (isNaN(dt)||dt<cutoff||!mtype) return;
       const k = dayKey(dt);
       daniceDays[k] = (daniceDays[k]||0) + 1;
     });
 
-    // Vinayak: QC entries by dispatch date
+    // Vinayak: QC -- valid = has invoice or QC result filled
     const vinayakDays = {};
     qc.forEach(r => {
       const dt = new Date(r['Date of Dispatch']||r['Dispatch Date']||r['Dispatch date']||'');
+      const inv = (r['SB Invoice']||r['Invoice Number']||'').trim();
+      const result = (r['Final QC Pass/Fail']||r['QC Result']||'').trim();
       if (isNaN(dt)||dt<cutoff) return;
+      if (!inv && !result) return;
       const k = dayKey(dt);
       vinayakDays[k] = (vinayakDays[k]||0) + 1;
     });
