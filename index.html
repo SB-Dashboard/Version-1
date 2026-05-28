@@ -672,6 +672,116 @@ td.bold { font-weight: 600; color: var(--text); }
 .rej-med  { color: #d97706; }
 .rej-low  { color: #16a34a; }
 
+
+/* ================================================================
+   MOBILE RESPONSIVE
+   ================================================================ */
+
+@media (max-width: 768px) {
+
+  .hdr {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 0;
+  }
+
+  .hdr-brand {
+    padding: 10px 16px;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    width: 100%;
+  }
+
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 4px;
+    gap: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    border-bottom: 1px solid #e5e7eb;
+    flex: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 0 12px;
+    height: 44px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .hdr-right {
+    width: 100%;
+    padding: 8px 16px;
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
+    margin-left: 0;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .panel {
+    padding: 14px 12px;
+    min-height: unset;
+  }
+
+  .g2, .g3, .g4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .g5 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .kpi {
+    padding: 12px 14px 12px 16px;
+  }
+  .kpi-val { font-size: 22px; }
+  .kpi-lbl { font-size: 9.5px; }
+  .kpi-sub { font-size: 10px; }
+
+  .tcard { overflow: hidden; }
+  .tcard > div { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .sec { font-size: 9.5px; margin: 18px 0 10px; }
+
+  .search-wrap { flex-wrap: wrap; }
+  .search-input { width: 100%; min-width: 0; }
+
+  .filter-bar { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .fsel { font-size: 12px; padding: 5px 10px; }
+
+  .bar-lbl { width: 90px; font-size: 10.5px; }
+
+  .tcard-hdr { flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+
+  .shift-val { font-size: 20px; }
+
+  .footer { font-size: 10px; padding: 12px; }
+
+  .err-banner { font-size: 11px; }
+
+  /* Trace */
+  #trace-input { font-size: 13px !important; padding: 10px 12px !important; }
+  .trace-step { flex-direction: column; gap: 10px; }
+  .trace-step-content { gap: 10px 16px; }
+  .trace-found-hdr { flex-wrap: wrap; gap: 8px; }
+
+  /* Progress bar */
+  .prog-wrap { gap: 6px; }
+  .prog-pct { width: 30px; font-size: 10px; }
+}
+
+@media (max-width: 400px) {
+  .g5 { grid-template-columns: 1fr !important; }
+  .kpi-val { font-size: 20px; }
+  .tab { padding: 0 10px; font-size: 11px; }
+  .hdr-brand img { height: 30px; }
+}
+
 </style>
 </head>
 <body>
@@ -1428,7 +1538,7 @@ function renderOrdersTable(orders, qcMap) {
   $('orders-tbody').innerHTML = filtered.length === 0
     ? '<tr><td colspan="9" class="no-data">No matching orders</td></tr>'
     : filtered.map(o => {
-        const oid    = String(o['Order Id'] || o['Order ID'] || o['order_id'] || o['OrderId'] || '').trim();
+        const oid    = String(o['Order Id'] || o['Order ID'] || o['order_id'] || o['OrderId'] || o[Object.keys(o)[0]] || '').trim();
         const qEntry = (qcMap||{})[oid];
         const days   = calcDays(o['Order Date'] || o['Date'] || o['date'], qEntry?.date);
         const st     = o['Order Status'] || o['Status'] || 'Open';
@@ -2099,6 +2209,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbo
 // CSV PARSER
 // ══════════════════════════════════════════════════════
 function parseCSV(text) {
+  text = text.replace(/^[\u200B\uFEFF\xEF\xBB\xBF]+/, '').replace(/^\xef\xbb\xbf/, '');
   const lines = [];
   let cur = '', inQ = false;
   for (let i = 0; i < text.length; i++) {
@@ -2121,10 +2232,11 @@ function parseCSV(text) {
   const filtered = lines.filter(r => r.some(c => c.trim() !== ''));
   if (filtered.length < 2) return [];
   // Strip BOM from first header — common in Google Sheets CSV exports
-  const headers = filtered[0].map((h, i) => {
-    let clean = h.trim();
-    if (i === 0) clean = clean.replace(/^\uFEFF/, '');
-    return clean;
+  const headers = filtered[0].map(h => {
+    let c = h.trim();
+    let code = c.charCodeAt(0);
+    while (c.length > 0 && (code < 32 || code === 0xFEFF || code === 0x200B)) { c = c.slice(1); code = c.charCodeAt(0); }
+    return c;
   });
   return filtered.slice(1).map(row => {
     const obj = {};
@@ -2468,7 +2580,7 @@ async function loadProductionData() {
     // Build lookups from already-loaded D object
     const orderMap = {};
     (D.orders||[]).forEach(o => {
-      const oid = String(o['Order Id']||o['Order ID']||'').trim();
+      const oid = String(o['Order Id']||o['Order ID']||o[Object.keys(o)[0]]||'').trim();
       if (oid) orderMap[oid] = { customer: o['Customer Name']||'', status: o['Order Status']||'' };
     });
 
@@ -2562,7 +2674,7 @@ function prodRenderOrderTable() {
       const info = PROD.orderMap[oid] || {};
       orders[oid] = {
         oid, customer: info.customer||'—',
-        product: PROD.prodOrderDet[oid] || r['Product Name'] || r['Product Code'] || '—',
+        product: r['Product Name'] || PROD.prodOrderDet[oid] || r['Product Code'] || '—',
         orderQty: PROD.orderQtyMap[oid] || 0,
         produced:0, rejected:0, machines: new Set()
       };
