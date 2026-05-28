@@ -630,6 +630,48 @@ td.bold { font-weight: 600; color: var(--text); }
   background: none; border: none; line-height: 1;
 }
 
+
+/* ── PRODUCTION PANEL ──────────────────────────────── */
+.prog-wrap { display: flex; align-items: center; gap: 8px; }
+.prog-track { flex: 1; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; min-width: 60px; }
+.prog-fill  { height: 100%; border-radius: 3px; transition: width .5s ease; }
+.prog-fill.good { background: #16a34a; }
+.prog-fill.warn { background: #d97706; }
+.prog-fill.over { background: #2563eb; }
+.prog-fill.low  { background: #e5e7eb; }
+.prog-pct { font-size: 11px; font-weight: 600; color: #4b5563; width: 38px; text-align: right; flex-shrink: 0; }
+
+.time-chart { padding: 16px 20px; overflow-x: auto; }
+.time-bars  { display: flex; align-items: flex-end; gap: 4px; height: 120px; min-width: 300px; }
+.time-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 24px; }
+.time-bar {
+  width: 100%; background: #111827; border-radius: 3px 3px 0 0;
+  transition: height .5s ease; cursor: pointer; position: relative;
+}
+.time-bar:hover { background: #374151; }
+.time-bar .tooltip {
+  display: none; position: absolute; bottom: calc(100% + 4px);
+  left: 50%; transform: translateX(-50%);
+  background: #111827; color: #fff; font-size: 10px;
+  padding: 3px 7px; border-radius: 4px; white-space: nowrap; z-index: 10;
+}
+.time-bar:hover .tooltip { display: block; }
+.time-lbl { font-size: 9px; color: #9ca3af; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+
+.shift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.shift-side { padding: 20px; text-align: center; }
+.shift-side:first-child { border-right: 1px solid #e5e7eb; }
+.shift-icon { font-size: 22px; margin-bottom: 8px; }
+.shift-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #9ca3af; margin-bottom: 10px; }
+.shift-val  { font-size: 26px; font-weight: 700; color: #111827; }
+.shift-sub  { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+.shift-rej  { font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+.rej-rate { font-size: 11.5px; font-weight: 600; }
+.rej-high { color: #dc2626; }
+.rej-med  { color: #d97706; }
+.rej-low  { color: #16a34a; }
+
 </style>
 </head>
 <body>
@@ -663,10 +705,9 @@ td.bold { font-weight: 600; color: var(--text); }
       <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Traceability
     </div>
   </div>
-  <a href="production.html" style="display:flex;align-items:center;gap:6px;padding:0 16px;height:56px;background:#111827;color:#fff;font-size:12px;font-weight:600;font-family:Arial,sans-serif;text-decoration:none;white-space:nowrap;border-left:1px solid #e5e7eb;transition:background .2s;flex-shrink:0" onmouseover="this.style.background='#1f2937'" onmouseout="this.style.background='#111827'">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Production
-  </a>
+    <div class="tab" onclick="switchTab('prod')">
+      <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Production
+    </div>
 
   <div class="hdr-right">
     <div class="live-dot" id="live-dot"></div>
@@ -995,6 +1036,136 @@ td.bold { font-weight: 600; color: var(--text); }
   <img id="lightbox-img" src="" alt="">
 </div>
 
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 7 — PRODUCTION
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-prod">
+  <div class="err-banner" id="err-prod"></div>
+
+  <!-- KPIs -->
+  <div class="sec">Production Overview</div>
+  <div class="g5">
+    <div class="kpi k1"><div class="kpi-lbl">Total Produced</div><div class="kpi-val" id="k-prod"><div class="skel"></div></div><div class="kpi-sub">units</div></div>
+    <div class="kpi k3"><div class="kpi-lbl">Total Rejected</div><div class="kpi-val" id="k-rej"><div class="skel"></div></div><div class="kpi-sub">units</div></div>
+    <div class="kpi k4"><div class="kpi-lbl">Rejection Rate</div><div class="kpi-val" id="k-rejrate"><div class="skel"></div></div><div class="kpi-sub">of total produced</div></div>
+    <div class="kpi k2"><div class="kpi-lbl">Net Good Units</div><div class="kpi-val" id="k-good"><div class="skel"></div></div><div class="kpi-sub">produced − rejected</div></div>
+    <div class="kpi k5"><div class="kpi-lbl">Active Orders</div><div class="kpi-val" id="k-orders"><div class="skel"></div></div><div class="kpi-sub">in production</div></div>
+  </div>
+
+  <!-- ORDER PRODUCTION TABLE -->
+  <div class="sec">Order-wise Production</div>
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Production by Order</div>
+        <div class="card-count" id="order-count">—</div>
+      </div>
+      <input id="search-orders" placeholder="Search order, product, customer…" oninput="prodRenderOrderTable()"
+        style="background:#f7f8fa;border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-family:Arial,sans-serif;outline:none;width:260px">
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Order No</th>
+        <th>Customer</th>
+        <th>Product</th>
+        <th>Order Qty</th>
+        <th>Produced</th>
+        <th>Rejected</th>
+        <th>Net Good</th>
+        <th>Rej %</th>
+        <th>Progress</th>
+        <th>Status</th>
+        <th>Machines Used</th>
+      </tr></thead>
+      <tbody id="order-tbody"><tr><td colspan="11" class="no-data">Loading…</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- PRODUCTION OVER TIME + SHIFT -->
+  <div class="g2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title" id="time-chart-title">Production Over Time</span>
+        <span class="card-count" id="time-chart-sub">—</span>
+      </div>
+      <div class="time-chart" id="time-chart-wrap">
+        <div class="no-data">Loading…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Day vs Night Shift</span></div>
+      <div class="shift-grid">
+        <div class="shift-side">
+          <div class="shift-icon">☀️</div>
+          <div class="shift-name">Day Shift</div>
+          <div class="shift-val" id="shift-day-prod">—</div>
+          <div class="shift-sub">units produced</div>
+          <div class="shift-rej" id="shift-day-rej" style="color:var(--red)">—</div>
+        </div>
+        <div class="shift-side">
+          <div class="shift-icon">🌙</div>
+          <div class="shift-name">Night Shift</div>
+          <div class="shift-val" id="shift-night-prod">—</div>
+          <div class="shift-sub">units produced</div>
+          <div class="shift-rej" id="shift-night-rej" style="color:var(--red)">—</div>
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid #f3f4f6">
+        <div class="card-title" style="font-size:11px;margin-bottom:10px">Shift Rejection Rate Comparison</div>
+        <div id="shift-rej-bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MACHINE + PRODUCT -->
+  <div class="g2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Machine Performance</span><span class="card-count" id="mach-count">—</span></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Machine</th>
+          <th>Unit</th>
+          <th>Produced</th>
+          <th>Rejected</th>
+          <th>Rej %</th>
+          <th>Orders</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="mach-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Product Performance</span><span class="card-count" id="prod-count">—</span></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Product</th>
+          <th>Code</th>
+          <th>Produced</th>
+          <th>Rejected</th>
+          <th>Rej %</th>
+        </tr></thead>
+        <tbody id="prod-tbody"><tr><td colspan="5" class="no-data">Loading…</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MACHINE BAR CHART -->
+  <div class="sec" style="margin-top:24px">Machine Output vs Rejection</div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Production & Rejection by Machine</span></div>
+    <div class="bars" id="mach-bars" style="padding:20px"></div>
+  </div>
+
+</div>
+</div>
+
 <div class="footer" id="footer-ts">Stallion Barware Manufacturing Co. · Vasai, Maharashtra · Auto-refresh every 60s</div>
 
 <script>
@@ -1103,6 +1274,8 @@ function switchTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   event.currentTarget.classList.add('active');
   $('panel-' + name).classList.add('active');
+  // Lazy-load production data only when tab is clicked
+  if (name === 'prod') loadProductionData();
 }
 
 // ══════════════════════════════════════════════════════
@@ -2270,6 +2443,315 @@ function buildDemoData() {
 // ══════════════════════════════════════════════════════
 fetchAll();
 startCountdown();
+
+// ══════════════════════════════════════════════════════
+// PRODUCTION TAB — DATA & RENDER
+// ══════════════════════════════════════════════════════
+const PROD_CSV = {
+  production:   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLW9lS83F_uFWfzbpCW7ASprRH7E9drO2f_UUQBoINLaAKMQvNxdgzuWfgRpmc7dCT7AazxhwHjR0Z/pub?gid=570424077&single=true&output=csv',
+  orderDetails: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLW9lS83F_uFWfzbpCW7ASprRH7E9drO2f_UUQBoINLaAKMQvNxdgzuWfgRpmc7dCT7AazxhwHjR0Z/pub?gid=0&single=true&output=csv',
+};
+
+let PROD = { raw:[], orderMap:{}, orderQtyMap:{}, prodOrderDet:{} };
+let prodFiltered = [], prodTimeView = 'day';
+let prodLoaded = false;
+
+async function loadProductionData() {
+  if (prodLoaded) return;
+  prodLoaded = true;
+  try {
+    const [prod, orderDet] = await Promise.all([
+      fetchCSV(PROD_CSV.production),
+      fetchCSV(PROD_CSV.orderDetails),
+    ]);
+
+    // Build lookups from already-loaded D object
+    const orderMap = {};
+    (D.orders||[]).forEach(o => {
+      const oid = String(o['Order Id']||o['Order ID']||'').trim();
+      if (oid) orderMap[oid] = { customer: o['Customer Name']||'', status: o['Order Status']||'' };
+    });
+
+    const orderQtyMap = {};
+    (D.orderDetails||[]).forEach(d => {
+      const oid = String(d['Order Id']||'').trim();
+      const qty = parseFloat(d['Quantity'])||0;
+      if (oid && qty) orderQtyMap[oid] = (orderQtyMap[oid]||0) + qty;
+    });
+
+    const prodOrderDet = {};
+    orderDet.forEach(d => {
+      const oid = String(d['Order No']||d['Order Id']||'').trim();
+      if (oid && !prodOrderDet[oid]) {
+        prodOrderDet[oid] = d['Product Name']||d['Product Code']||'';
+      }
+    });
+
+    PROD = { raw: prod, orderMap, orderQtyMap, prodOrderDet };
+
+    // Populate filter dropdowns
+    const orders   = [...new Set(prod.map(r=>r['Order No']).filter(Boolean))].sort((a,b)=>b-a);
+    const machines = [...new Set(prod.map(r=>r['Machine']).filter(Boolean))].sort();
+    const sel_o = $('filter-order');
+    const sel_m = $('filter-machine');
+    if (sel_o) sel_o.innerHTML = '<option value="">All Orders</option>' + orders.map(o=>`<option value="${o}">${o}</option>`).join('');
+    if (sel_m) sel_m.innerHTML = '<option value="">All Machines</option>' + machines.map(m=>`<option value="${m}">${m}</option>`).join('');
+
+    prodApplyFilters();
+  } catch(e) {
+    console.error('Production load error:', e);
+    const eb = $('err-prod');
+    if (eb) { eb.textContent = '⚠ Could not load production data: ' + e.message; eb.style.display = 'block'; }
+  }
+}
+
+function prodApplyFilters() {
+  const ord   = $('filter-order')?.value   || '';
+  const mach  = $('filter-machine')?.value || '';
+  const shift = $('filter-shift')?.value   || '';
+  const unit  = $('filter-unit')?.value    || '';
+
+  prodFiltered = PROD.raw.filter(r => {
+    if (ord   && r['Order No'] !== ord)  return false;
+    if (mach  && r['Machine']  !== mach) return false;
+    if (shift && r['Shift']    !== shift) return false;
+    if (unit  && r['Unit']     !== unit)  return false;
+    return true;
+  });
+  prodRenderAll();
+}
+
+function prodSetTimeView(view, btn) {
+  prodTimeView = view;
+  document.querySelectorAll('.prod-toggle').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  prodRenderTimeChart(prodFiltered);
+}
+
+function prodRenderAll() {
+  const p = prodFiltered;
+  const totalProd = p.reduce((s,r)=>s+(parseFloat(r['Production'])||0),0);
+  const totalRej  = p.reduce((s,r)=>s+(parseFloat(r['Rejection'])||0),0);
+  const rejRate   = totalProd ? (totalRej/totalProd*100) : 0;
+  const netGood   = totalProd - totalRej;
+  const orders    = new Set(p.map(r=>r['Order No']).filter(Boolean));
+
+  const set = (id,v) => { const el=$(id); if(el) el.textContent=v; };
+  set('k-prod',    totalProd.toLocaleString('en-IN'));
+  set('k-rej',     totalRej.toLocaleString('en-IN'));
+  set('k-rejrate', rejRate.toFixed(1)+'%');
+  set('k-good',    netGood.toLocaleString('en-IN'));
+  set('k-orders',  orders.size);
+
+  prodRenderOrderTable();
+  prodRenderTimeChart(p);
+  prodRenderShift(p);
+  prodRenderMachineTable(p);
+  prodRenderProductTable(p);
+  prodRenderMachineBars(p);
+}
+
+function prodRenderOrderTable() {
+  const search = ($('search-orders')?.value||'').toLowerCase();
+  const p = prodFiltered;
+  const orders = {};
+  p.forEach(r => {
+    const oid = (r['Order No']||'').trim();
+    if (!oid) return;
+    if (!orders[oid]) {
+      const info = PROD.orderMap[oid] || {};
+      orders[oid] = {
+        oid, customer: info.customer||'—',
+        product: PROD.prodOrderDet[oid] || r['Product Name'] || r['Product Code'] || '—',
+        orderQty: PROD.orderQtyMap[oid] || 0,
+        produced:0, rejected:0, machines: new Set()
+      };
+    }
+    orders[oid].produced += parseFloat(r['Production'])||0;
+    orders[oid].rejected += parseFloat(r['Rejection'])||0;
+    if (r['Machine']) orders[oid].machines.add(r['Machine']);
+  });
+
+  let rows = Object.values(orders);
+  if (search) rows = rows.filter(o => (o.oid+o.customer+o.product).toLowerCase().includes(search));
+  rows.sort((a,b) => b.produced - a.produced);
+
+  const cnt = $('order-count');
+  if (cnt) cnt.textContent = `${rows.length} orders`;
+
+  const tbody = $('order-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = rows.length === 0
+    ? '<tr><td colspan="11" class="no-data">No production records</td></tr>'
+    : rows.map(o => {
+        const net     = o.produced - o.rejected;
+        const rejRate = o.produced ? (o.rejected/o.produced*100) : 0;
+        const pct     = o.orderQty ? (o.produced/o.orderQty*100) : 0;
+        const machs   = [...o.machines].slice(0,3).join(', ') + (o.machines.size>3?` +${o.machines.size-3}`:'');
+        const capped  = Math.min(pct,100);
+        const pcls    = pct>=100?'over':pct>=50?'good':pct>0?'warn':'low';
+        const rpill   = rejRate>=5?'<span class="pill pill-fail">'+rejRate.toFixed(1)+'%</span>':rejRate>=2?'<span class="pill pill-hold">'+rejRate.toFixed(1)+'%</span>':'<span class="pill pill-pass">'+rejRate.toFixed(1)+'%</span>';
+        const spill   = rejRate>=5?'<span class="pill pill-fail">High Rejection</span>':pct>=100?'<span class="pill pill-dispatch">Complete</span>':pct>=50?'<span class="pill pill-pass">In Progress</span>':pct>0?'<span class="pill pill-pending">Started</span>':'<span class="pill pill-open">Pending</span>';
+        const prog    = o.orderQty
+          ? `<div class="prog-wrap"><div class="prog-track"><div class="prog-fill ${pcls}" style="width:${capped}%"></div></div><div class="prog-pct">${pct>0?Math.round(pct)+'%':'—'}</div></div>`
+          : '<span style="color:var(--muted);font-size:11px">—</span>';
+        return `<tr>
+          <td class="mono bold">${o.oid}</td>
+          <td class="bold">${o.customer}</td>
+          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.product}">${o.product}</td>
+          <td style="text-align:right">${o.orderQty ? o.orderQty.toLocaleString('en-IN') : '—'}</td>
+          <td style="text-align:right;font-weight:600">${o.produced.toLocaleString('en-IN')}</td>
+          <td style="text-align:right;color:#dc2626">${o.rejected.toLocaleString('en-IN')}</td>
+          <td style="text-align:right;color:#16a34a">${net.toLocaleString('en-IN')}</td>
+          <td>${rpill}</td>
+          <td style="min-width:130px">${prog}</td>
+          <td>${spill}</td>
+          <td style="font-size:11px;color:#9ca3af;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${machs}">${machs||'—'}</td>
+        </tr>`;
+      }).join('');
+}
+
+function prodRenderTimeChart(p) {
+  const grouped = {};
+  p.forEach(r => {
+    const ds = r['Date']||''; if (!ds) return;
+    let key = ds;
+    if (prodTimeView==='week') {
+      const d=new Date(ds); if(isNaN(d))return;
+      const jan1=new Date(d.getFullYear(),0,1);
+      const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+      key=d.getFullYear()+'-W'+String(wk).padStart(2,'0');
+    } else if (prodTimeView==='month') { key=ds.slice(0,7); }
+    if (!grouped[key]) grouped[key]={prod:0,rej:0};
+    grouped[key].prod += parseFloat(r['Production'])||0;
+    grouped[key].rej  += parseFloat(r['Rejection'])||0;
+  });
+
+  const keys   = Object.keys(grouped).sort();
+  const maxVal = Math.max(...keys.map(k=>grouped[k].prod),1);
+  const labels = {day:'Daily',week:'Weekly',month:'Monthly'};
+  const ttl = $('time-chart-title'); if(ttl) ttl.textContent = labels[prodTimeView]+' Production';
+  const sub = $('time-chart-sub');  if(sub) sub.textContent = keys.length+' '+prodTimeView+'s';
+
+  const wrap = $('time-chart-wrap');
+  if (!wrap) return;
+  if (keys.length===0) { wrap.innerHTML='<div class="no-data">No data</div>'; return; }
+
+  const display = keys.slice(-30);
+  wrap.innerHTML = `<div class="time-bars">
+    ${display.map(k=>{
+      const pct=Math.max(2,Math.round((grouped[k].prod/maxVal)*100));
+      const lbl=prodTimeView==='day'?k.slice(5):k.slice(-5);
+      return `<div class="time-bar-wrap">
+        <div class="time-bar" style="height:${pct}%">
+          <div class="tooltip">${k}: ${grouped[k].prod.toLocaleString('en-IN')} units<br>Rej: ${grouped[k].rej.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="time-lbl">${lbl}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:#9ca3af">
+    <span>■ Production units</span><span>Peak: ${maxVal.toLocaleString('en-IN')}</span>
+  </div>`;
+}
+
+function prodRenderShift(p) {
+  const s={};
+  p.forEach(r=>{ const k=r['Shift']||'Unknown'; if(!s[k])s[k]={prod:0,rej:0}; s[k].prod+=parseFloat(r['Production'])||0; s[k].rej+=parseFloat(r['Rejection'])||0; });
+  const day=s['Day']||{prod:0,rej:0}, night=s['Night']||{prod:0,rej:0};
+  const dr=(day.prod?(day.rej/day.prod*100):0).toFixed(1);
+  const nr=(night.prod?(night.rej/night.prod*100):0).toFixed(1);
+  const set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
+  set('shift-day-prod',  day.prod.toLocaleString('en-IN'));
+  set('shift-night-prod',night.prod.toLocaleString('en-IN'));
+  set('shift-day-rej',   `${day.rej.toLocaleString('en-IN')} rejected (${dr}%)`);
+  set('shift-night-rej', `${night.rej.toLocaleString('en-IN')} rejected (${nr}%)`);
+  const mx=Math.max(day.prod,night.prod,1);
+  const el=$('shift-rej-bars'); if(!el)return;
+  el.innerHTML=`
+    <div class="bar-row"><div class="bar-lbl">Day Shift</div><div class="bar-track"><div class="bar-fill bar-dark" style="width:${Math.round(day.prod/mx*100)}%"></div></div><div class="bar-val">${day.prod.toLocaleString('en-IN')}</div></div>
+    <div class="bar-row"><div class="bar-lbl">Night Shift</div><div class="bar-track"><div class="bar-fill bar-dark" style="width:${Math.round(night.prod/mx*100)}%"></div></div><div class="bar-val">${night.prod.toLocaleString('en-IN')}</div></div>
+    <div style="margin-top:12px;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em">Rejection Rate</div>
+    <div style="margin-top:8px" class="bar-row"><div class="bar-lbl">Day</div><div class="bar-track"><div class="bar-fill bar-red" style="width:${Math.min(100,parseFloat(dr)*10)}%"></div></div><div class="bar-val">${dr}%</div></div>
+    <div class="bar-row"><div class="bar-lbl">Night</div><div class="bar-track"><div class="bar-fill bar-red" style="width:${Math.min(100,parseFloat(nr)*10)}%"></div></div><div class="bar-val">${nr}%</div></div>`;
+}
+
+function prodRenderMachineTable(p) {
+  const m={};
+  p.forEach(r=>{
+    const k=r['Machine']||'Unknown';
+    if(!m[k])m[k]={machine:k,unit:r['Unit']||'',prod:0,rej:0,orders:new Set()};
+    m[k].prod+=parseFloat(r['Production'])||0;
+    m[k].rej+=parseFloat(r['Rejection'])||0;
+    if(r['Order No'])m[k].orders.add(r['Order No']);
+  });
+  const rows=Object.values(m).sort((a,b)=>b.prod-a.prod);
+  const cnt=$('mach-count'); if(cnt)cnt.textContent=rows.length+' machines';
+  const tbody=$('mach-tbody'); if(!tbody)return;
+  tbody.innerHTML=rows.length===0?'<tr><td colspan="7" class="no-data">No data</td></tr>':rows.map(r=>{
+    const rr=r.prod?(r.rej/r.prod*100):0;
+    const rpill=rr>=5?'<span class="pill pill-fail">'+rr.toFixed(1)+'%</span>':rr>=2?'<span class="pill pill-hold">'+rr.toFixed(1)+'%</span>':'<span class="pill pill-pass">'+rr.toFixed(1)+'%</span>';
+    const spill=rr>=5?'<span class="pill pill-fail">Check</span>':rr>=2?'<span class="pill pill-pending">Watch</span>':'<span class="pill pill-pass">Good</span>';
+    const upill=r.unit==='Unit 1'?'<span class="pill pill-open">Unit 1</span>':'<span class="pill pill-dispatch">Unit 2</span>';
+    return `<tr><td class="bold">${r.machine}</td><td>${upill}</td><td style="text-align:right;font-weight:600">${r.prod.toLocaleString('en-IN')}</td><td style="text-align:right;color:#dc2626">${r.rej.toLocaleString('en-IN')}</td><td>${rpill}</td><td style="text-align:right">${r.orders.size}</td><td>${spill}</td></tr>`;
+  }).join('');
+}
+
+function prodRenderProductTable(p) {
+  const pr={};
+  p.forEach(r=>{
+    const k=r['Product Code']||r['Product Name']||'Unknown';
+    if(!pr[k])pr[k]={code:r['Product Code']||'',name:r['Product Name']||r['Product Code']||'Unknown',prod:0,rej:0};
+    pr[k].prod+=parseFloat(r['Production'])||0;
+    pr[k].rej+=parseFloat(r['Rejection'])||0;
+  });
+  const rows=Object.values(pr).sort((a,b)=>b.prod-a.prod).slice(0,15);
+  const cnt=$('prod-count'); if(cnt)cnt.textContent='Top '+rows.length;
+  const tbody=$('prod-tbody'); if(!tbody)return;
+  tbody.innerHTML=rows.length===0?'<tr><td colspan="5" class="no-data">No data</td></tr>':rows.map(r=>{
+    const rr=r.prod?(r.rej/r.prod*100):0;
+    const rpill=rr>=5?'<span class="pill pill-fail">'+rr.toFixed(1)+'%</span>':rr>=2?'<span class="pill pill-hold">'+rr.toFixed(1)+'%</span>':'<span class="pill pill-pass">'+rr.toFixed(1)+'%</span>';
+    return `<tr><td class="bold" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td><td class="mono" style="color:#7c3aed;font-size:11px">${r.code||'—'}</td><td style="text-align:right;font-weight:600">${r.prod.toLocaleString('en-IN')}</td><td style="text-align:right;color:#dc2626">${r.rej.toLocaleString('en-IN')}</td><td>${rpill}</td></tr>`;
+  }).join('');
+}
+
+function prodRenderMachineBars(p) {
+  const m={};
+  p.forEach(r=>{
+    const k=r['Machine']||'Unknown';
+    if(!m[k])m[k]={prod:0,rej:0};
+    m[k].prod+=parseFloat(r['Production'])||0;
+    m[k].rej+=parseFloat(r['Rejection'])||0;
+  });
+  const rows=Object.entries(m).sort((a,b)=>b[1].prod-a[1].prod);
+  const mx=Math.max(...rows.map(([,v])=>v.prod),1);
+  const el=$('mach-bars'); if(!el)return;
+  el.innerHTML=rows.length===0?'<div class="no-data">No data</div>':rows.map(([mach,v])=>{
+    const rr=v.prod?(v.rej/v.prod*100).toFixed(1):'0.0';
+    const pp=Math.max(2,Math.round(v.prod/mx*100));
+    const rp=Math.max(0,Math.round(v.rej/mx*100));
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:12px;font-weight:600;color:#111827">${mach}</span>
+        <span style="font-size:11px;color:#9ca3af">${v.prod.toLocaleString('en-IN')} produced · ${v.rej.toLocaleString('en-IN')} rejected · ${rr}% rej</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:#9ca3af;width:60px">Produced</span>
+          <div style="flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden"><div style="width:${pp}%;height:100%;background:#111827;border-radius:4px;transition:width .6s"></div></div>
+          <span style="font-size:11px;font-weight:600;color:#4b5563;width:70px;text-align:right">${v.prod.toLocaleString('en-IN')}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:#9ca3af;width:60px">Rejected</span>
+          <div style="flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden"><div style="width:${rp}%;height:100%;background:#dc2626;border-radius:4px;transition:width .6s"></div></div>
+          <span style="font-size:11px;font-weight:600;color:#dc2626;width:70px;text-align:right">${v.rej.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 </script>
 </body>
 </html>
