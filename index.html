@@ -815,6 +815,9 @@ td.bold { font-weight: 600; color: var(--text); }
       <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Traceability
     </div>
   </div>
+    <div class="tab" onclick="switchTab('team')">
+      <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Team
+    </div>
     <div class="tab" onclick="switchTab('prod')">
       <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Production
     </div>
@@ -1276,6 +1279,58 @@ td.bold { font-weight: 600; color: var(--text); }
 </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════
+     TAB 8 — TEAM ACCOUNTABILITY
+═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-team">
+  <div class="err-banner" id="err-team"></div>
+
+  <div class="sec">Team Overview — Last 3 Months</div>
+
+  <!-- PERSON CARDS -->
+  <div id="team-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px">
+    <!-- Populated by JS -->
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px;text-align:center;color:#9ca3af">Loading team data…</div>
+  </div>
+
+  <!-- DAILY COMPLETENESS TABLE -->
+  <div class="sec">Daily Completeness — Last 7 Working Days</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <span class="tcard-title">Who logged what — daily</span>
+      <span class="tcard-count" id="team-date-range">—</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table id="team-daily-table">
+      <thead><tr id="team-daily-hdr"></tr></thead>
+      <tbody id="team-daily-body"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- HEATMAPS -->
+  <div class="sec">Activity Heatmap — Last 3 Months</div>
+  <div id="team-heatmaps" style="display:flex;flex-direction:column;gap:20px"></div>
+
+  <!-- MISSING QC -->
+  <div class="sec">Vinayak — Dispatched Orders Missing QC</div>
+  <div class="tcard">
+    <div class="tcard-hdr">
+      <span class="tcard-title">Completed orders with no QC entry</span>
+      <span class="tcard-count" id="missing-qc-count">—</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Order ID</th><th>Customer</th><th>Dispatch Date</th><th>Days Since Dispatch</th><th>Status</th>
+      </tr></thead>
+      <tbody id="missing-qc-tbody"><tr><td colspan="5" class="no-data">Loading…</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+
 <div class="footer" id="footer-ts">Stallion Barware Manufacturing Co. · Vasai, Maharashtra · Auto-refresh every 60s</div>
 
 <script>
@@ -1386,6 +1441,7 @@ function switchTab(name) {
   $('panel-' + name).classList.add('active');
   // Lazy-load production data only when tab is clicked
   if (name === 'prod') loadProductionData();
+  if (name === 'team') loadTeamData();
 }
 
 // ══════════════════════════════════════════════════════
@@ -2862,6 +2918,434 @@ function prodRenderMachineBars(p) {
       </div>
     </div>`;
   }).join('');
+}
+
+
+// ══════════════════════════════════════════════════════
+// TEAM ACCOUNTABILITY
+// ══════════════════════════════════════════════════════
+const TEAM = [
+  { name: 'Clare',   role: 'Sales',       color: '#2563eb', icon: '📦', tab: 'sales'  },
+  { name: 'Aarti',   role: 'Raw Material', color: '#0891b2', icon: '🧪', tab: 'rm'    },
+  { name: 'Babita',  role: 'Production',  color: '#7c3aed', icon: '⚙️', tab: 'prod'  },
+  { name: 'Danice',  role: 'Maintenance', color: '#d97706', icon: '🔧', tab: 'maint' },
+  { name: 'Vinayak', role: 'QC',          color: '#16a34a', icon: '✅', tab: 'qc'    },
+];
+
+// Expected daily entries per person (excluding Sundays)
+const EXPECTED = {
+  'Babita':  32,  // 16 machines × 2 shifts
+  'Danice':  1,   // 1 daily machine check
+  'Vinayak': null, // variable — per dispatched order
+  'Aarti':   null, // variable
+  'Clare':   null, // variable
+};
+
+let teamLoaded = false;
+
+function isWorkingDay(date) {
+  return date.getDay() !== 0; // not Sunday
+}
+
+function workingDaysInRange(start, end) {
+  let count = 0;
+  const d = new Date(start);
+  while (d <= end) {
+    if (isWorkingDay(d)) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+function getWorkingDays(n) {
+  // Get last n working days
+  const days = [];
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  while (days.length < n) {
+    if (isWorkingDay(d)) days.unshift(new Date(d));
+    d.setDate(d.getDate() - 1);
+  }
+  return days;
+}
+
+function fmt_date(d) {
+  return `${d.getDate()}/${d.getMonth()+1}`;
+}
+
+function dayKey(d) {
+  return d.toISOString().slice(0,10);
+}
+
+async function loadTeamData() {
+  if (teamLoaded) return;
+  teamLoaded = true;
+
+  try {
+    // Use already-loaded data from D object
+    const orders     = D.orders     || [];
+    const qc         = D.qc         || [];
+    const rm         = D.rm         || [];
+    const molds      = D.molds      || [];
+    const machines   = D.machines   || [];
+    const equipment  = D.equipment  || [];
+    const daily      = D.dailyMachine || [];
+    const prod       = PROD.raw     || [];
+
+    // 3-month cutoff
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - 3);
+    cutoff.setHours(0,0,0,0);
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    // ── Build daily entry counts per person ──
+    // Clare: Sales orders by Order Date
+    const clareDays = {};
+    orders.forEach(o => {
+      const dt = new Date(o['Order Date']||o['Date']||'');
+      if (isNaN(dt)||dt<cutoff) return;
+      const k = dayKey(dt);
+      clareDays[k] = (clareDays[k]||0) + 1;
+    });
+
+    // Aarti: RM inward by Date Time
+    const aartiDays = {};
+    rm.forEach(r => {
+      const dt = new Date(r['Date Time']||r['Date']||'');
+      if (isNaN(dt)||dt<cutoff) return;
+      const k = dayKey(dt);
+      aartiDays[k] = (aartiDays[k]||0) + 1;
+    });
+
+    // Babita: Production by Date
+    const babitaDays = {};
+    prod.forEach(r => {
+      const dt = new Date(r['Date']||'');
+      if (isNaN(dt)||dt<cutoff) return;
+      if (!isWorkingDay(dt)) return;
+      const k = dayKey(dt);
+      babitaDays[k] = (babitaDays[k]||0) + 1;
+    });
+
+    // Danice: Daily machine maintenance by Date
+    const daniceDays = {};
+    daily.forEach(r => {
+      const dt = new Date(r['Date Time Stamp']||r['Date']||'');
+      if (isNaN(dt)||dt<cutoff) return;
+      const k = dayKey(dt);
+      daniceDays[k] = (daniceDays[k]||0) + 1;
+    });
+    // Also count mold+machine maintenance
+    [...molds,...machines].forEach(r => {
+      const dt = new Date(r['Date Time Stamp']||r['Date']||'');
+      if (isNaN(dt)||dt<cutoff) return;
+      const k = dayKey(dt);
+      daniceDays[k] = (daniceDays[k]||0) + 1;
+    });
+
+    // Vinayak: QC entries by dispatch date
+    const vinayakDays = {};
+    qc.forEach(r => {
+      const dt = new Date(r['Date of Dispatch']||r['Dispatch Date']||r['Dispatch date']||'');
+      if (isNaN(dt)||dt<cutoff) return;
+      const k = dayKey(dt);
+      vinayakDays[k] = (vinayakDays[k]||0) + 1;
+    });
+
+    const personDays = {
+      'Clare':   clareDays,
+      'Aarti':   aartiDays,
+      'Babita':  babitaDays,
+      'Danice':  daniceDays,
+      'Vinayak': vinayakDays,
+    };
+
+    // ── Calculate stats per person ──
+    const totalWorkingDays = workingDaysInRange(cutoff, today);
+    const last7 = getWorkingDays(7);
+
+    // Last entry date per person
+    const lastEntry = {};
+    Object.entries(personDays).forEach(([name, days]) => {
+      const dates = Object.keys(days).filter(k => days[k] > 0).sort();
+      lastEntry[name] = dates.length ? dates[dates.length-1] : null;
+    });
+
+    // Total entries per person (3 months)
+    const totalEntries = {};
+    Object.entries(personDays).forEach(([name, days]) => {
+      totalEntries[name] = Object.values(days).reduce((s,v)=>s+v,0);
+    });
+
+    // Days with entries vs working days (3 months)
+    const daysLogged = {};
+    Object.entries(personDays).forEach(([name, days]) => {
+      daysLogged[name] = Object.keys(days).filter(k => days[k] > 0).length;
+    });
+
+    // Daily completeness for Babita (32 expected)
+    const babitaComplete = {};
+    Object.entries(babitaDays).forEach(([k, count]) => {
+      babitaComplete[k] = Math.min(100, Math.round(count / 32 * 100));
+    });
+
+    // Gap detection — days since last entry
+    const daysSinceLastEntry = {};
+    Object.entries(lastEntry).forEach(([name, last]) => {
+      if (!last) { daysSinceLastEntry[name] = 999; return; }
+      const lastDt = new Date(last);
+      let gap = 0;
+      const d = new Date(lastDt);
+      d.setDate(d.getDate() + 1);
+      while (d <= today) {
+        if (isWorkingDay(d)) gap++;
+        d.setDate(d.getDate() + 1);
+      }
+      daysSinceLastEntry[name] = gap;
+    });
+
+    // Status
+    function getStatus(name) {
+      const gap = daysSinceLastEntry[name] || 0;
+      if (gap === 0) return { label: 'Up to date', color: '#16a34a', bg: '#f0fdf4' };
+      if (gap === 1) return { label: '1 day behind', color: '#d97706', bg: '#fffbeb' };
+      return { label: `${gap} days behind`, color: '#dc2626', bg: '#fef2f2' };
+    }
+
+    // ── Render person cards ──
+    const cards = document.getElementById('team-cards');
+    if (cards) {
+      cards.innerHTML = TEAM.map(t => {
+        const status = getStatus(t.name);
+        const last = lastEntry[t.name];
+        const lastFmt = last ? new Date(last).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : 'Never';
+        const total = totalEntries[t.name] || 0;
+        const logged = daysLogged[t.name] || 0;
+        const pct = totalWorkingDays ? Math.round(logged/totalWorkingDays*100) : 0;
+        const exp = EXPECTED[t.name];
+        const todayKey = dayKey(today);
+        const todayCount = personDays[t.name][todayKey] || 0;
+        const todayExp = exp || '—';
+        const todayStatus = !exp ? '' : todayCount >= exp
+          ? `<span style="color:#16a34a;font-weight:600">✓ ${todayCount}/${exp}</span>`
+          : `<span style="color:#dc2626;font-weight:600">⚠ ${todayCount}/${exp}</span>`;
+
+        return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+          <div style="background:${t.color};padding:14px 18px;display:flex;align-items:center;gap:10px">
+            <div style="font-size:22px">${t.icon}</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#fff">${t.name}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.8)">${t.role}</div>
+            </div>
+            <div style="margin-left:auto;background:${status.bg};color:${status.color};font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:20px">${status.label}</div>
+          </div>
+          <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:9.5px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Last Entry</div>
+              <div style="font-size:13px;font-weight:600;color:#111827">${lastFmt}</div>
+            </div>
+            <div>
+              <div style="font-size:9.5px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Today</div>
+              <div style="font-size:13px">${exp ? todayStatus : `<span style="font-weight:600;color:#111827">${todayCount} entries</span>`}</div>
+            </div>
+            <div>
+              <div style="font-size:9.5px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">3-Month Total</div>
+              <div style="font-size:13px;font-weight:600;color:#111827">${total.toLocaleString('en-IN')} entries</div>
+            </div>
+            <div>
+              <div style="font-size:9.5px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Days Active</div>
+              <div style="font-size:13px;font-weight:600;color:#111827">${logged} / ${totalWorkingDays} days</div>
+            </div>
+          </div>
+          <div style="padding:0 18px 14px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <span style="font-size:10px;color:#9ca3af">Consistency</span>
+              <span style="font-size:11px;font-weight:600;color:${pct>=80?'#16a34a':pct>=50?'#d97706':'#dc2626'}">${pct}%</span>
+            </div>
+            <div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${pct>=80?'#16a34a':pct>=50?'#d97706':'#dc2626'};border-radius:3px;transition:width .6s"></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Daily completeness table (last 7 working days) ──
+    const hdrEl = document.getElementById('team-daily-hdr');
+    const bodyEl = document.getElementById('team-daily-body');
+    const dateRangeEl = document.getElementById('team-date-range');
+
+    if (hdrEl && bodyEl) {
+      // Header: Date columns
+      hdrEl.innerHTML = '<th>Person</th>' + last7.map(d =>
+        `<th style="text-align:center;white-space:nowrap">${fmt_date(d)}<br><span style="font-size:9px;font-weight:400">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}</span></th>`
+      ).join('');
+
+      if (dateRangeEl) dateRangeEl.textContent = `${fmt_date(last7[0])} – ${fmt_date(last7[last7.length-1])}`;
+
+      bodyEl.innerHTML = TEAM.map(t => {
+        const days = personDays[t.name];
+        const exp = EXPECTED[t.name];
+        const cells = last7.map(d => {
+          const k = dayKey(d);
+          const count = days[k] || 0;
+          const isFuture = d > today;
+          if (isFuture) return '<td style="text-align:center;color:#e5e7eb">—</td>';
+          if (count === 0) {
+            return `<td style="text-align:center"><span style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px">0</span></td>`;
+          }
+          if (exp) {
+            const pct = Math.round(count/exp*100);
+            const bg = pct>=90?'#f0fdf4':pct>=60?'#fffbeb':'#fef2f2';
+            const col = pct>=90?'#166534':pct>=60?'#92400e':'#991b1b';
+            return `<td style="text-align:center"><span style="background:${bg};color:${col};font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px">${count}<br><span style="font-size:9px">${pct}%</span></span></td>`;
+          }
+          return `<td style="text-align:center"><span style="background:#f0fdf4;color:#166534;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px">${count}</span></td>`;
+        }).join('');
+        return `<tr>
+          <td style="font-weight:600;white-space:nowrap">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TEAM.find(x=>x.name===t.name).color};margin-right:6px"></span>
+            ${t.name}<br><span style="font-size:10px;color:#9ca3af;font-weight:400">${t.role}</span>
+          </td>
+          ${cells}
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Heatmaps ──
+    const heatmapEl = document.getElementById('team-heatmaps');
+    if (heatmapEl) {
+      heatmapEl.innerHTML = TEAM.map(t => {
+        const days = personDays[t.name];
+        const exp = EXPECTED[t.name];
+        const maxVal = Math.max(...Object.values(days), 1);
+
+        // Build 13 weeks of days
+        const endDate = new Date(today);
+        const startDate = new Date(cutoff);
+        const allDays = [];
+        const d = new Date(startDate);
+        while (d <= endDate) {
+          allDays.push(new Date(d));
+          d.setDate(d.getDate() + 1);
+        }
+
+        // Group into weeks
+        const weeks = [];
+        let week = [];
+        allDays.forEach((day, i) => {
+          if (i === 0) {
+            // Pad first week
+            for (let j = 0; j < day.getDay(); j++) week.push(null);
+          }
+          week.push(day);
+          if (day.getDay() === 6 || i === allDays.length-1) {
+            weeks.push(week);
+            week = [];
+          }
+        });
+
+        const cells = weeks.map(wk =>
+          `<div style="display:flex;flex-direction:column;gap:2px">
+            ${wk.map(day => {
+              if (!day) return '<div style="width:11px;height:11px"></div>';
+              const k = dayKey(day);
+              const count = days[k] || 0;
+              const isSunday = day.getDay() === 0;
+              const isFuture = day > today;
+              let bg = '#f3f4f6';
+              if (isSunday) bg = '#f9fafb';
+              else if (isFuture) bg = '#f9fafb';
+              else if (count > 0) {
+                const pct = exp ? count/exp : count/maxVal;
+                if (pct >= 0.9) bg = t.color;
+                else if (pct >= 0.5) bg = t.color + '99';
+                else bg = t.color + '44';
+              } else if (!isSunday && !isFuture) {
+                bg = '#fee2e2'; // missing day — red
+              }
+              const tooltip = isSunday ? 'Sunday' : isFuture ? '' : `${k}: ${count} entries${exp?' / '+exp+' expected':''}`;
+              return `<div title="${tooltip}" style="width:11px;height:11px;border-radius:2px;background:${bg}"></div>`;
+            }).join('')}
+          </div>`
+        ).join('');
+
+        const totalE = Object.values(days).reduce((s,v)=>s+v,0);
+        const activeDays = Object.keys(days).filter(k=>days[k]>0).length;
+        const wdTotal = workingDaysInRange(cutoff, today);
+        const pct = wdTotal ? Math.round(activeDays/wdTotal*100) : 0;
+
+        return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">${t.icon}</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#111827">${t.name} — ${t.role}</div>
+                <div style="font-size:11px;color:#9ca3af">${totalE.toLocaleString('en-IN')} entries · ${activeDays}/${wdTotal} days · ${pct}% consistency</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#9ca3af">
+              <div style="width:11px;height:11px;border-radius:2px;background:#fee2e2"></div> Missing
+              <div style="width:11px;height:11px;border-radius:2px;background:${t.color}44;margin-left:4px"></div> Partial
+              <div style="width:11px;height:11px;border-radius:2px;background:${t.color};margin-left:4px"></div> Complete
+            </div>
+          </div>
+          <div style="display:flex;gap:2px;overflow-x:auto">${cells}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:#9ca3af">
+            <span>${new Date(cutoff).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</span>
+            <span>Today</span>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Missing QC entries ──
+    const qcMap = {};
+    qc.forEach(r => {
+      const oid = String(r['Order Id']||r['OrderId']||'').trim();
+      if (oid) qcMap[oid] = true;
+    });
+
+    const missingQC = orders.filter(o => {
+      const status = String(o['Order Status']||'').trim();
+      const oid = String(o['Order Id']||o['Order ID']||o[Object.keys(o)[0]]||'').trim();
+      const dt = new Date(o['Dispatch date']||o['Dispatch Date']||'');
+      const inRange = !isNaN(dt) && dt >= cutoff;
+      return status === 'Completed' && !qcMap[oid] && inRange;
+    });
+
+    const mqCount = document.getElementById('missing-qc-count');
+    if (mqCount) mqCount.textContent = `${missingQC.length} missing`;
+
+    const mqTbody = document.getElementById('missing-qc-tbody');
+    if (mqTbody) {
+      mqTbody.innerHTML = missingQC.length === 0
+        ? '<tr><td colspan="5" class="no-data" style="color:#16a34a">✓ All dispatched orders have QC entries</td></tr>'
+        : missingQC.slice(0,30).map(o => {
+            const oid = String(o['Order Id']||o['Order ID']||o[Object.keys(o)[0]]||'').trim();
+            const disp = o['Dispatch date']||o['Dispatch Date']||'';
+            const dispDt = new Date(disp);
+            const daysSince = !isNaN(dispDt) ? Math.floor((new Date()-dispDt)/86400000) : '—';
+            const urgency = typeof daysSince === 'number' && daysSince > 3
+              ? '<span class="pill pill-fail">Urgent</span>'
+              : '<span class="pill pill-pending">Pending</span>';
+            return `<tr>
+              <td class="mono bold">${oid}</td>
+              <td class="bold">${o['Customer Name']||'—'}</td>
+              <td>${disp||'—'}</td>
+              <td style="text-align:center;font-weight:600;color:${typeof daysSince==='number'&&daysSince>3?'#dc2626':'#d97706'}">${daysSince}d</td>
+              <td>${urgency}</td>
+            </tr>`;
+          }).join('');
+    }
+
+  } catch(e) {
+    console.error('Team load error:', e);
+    const eb = document.getElementById('err-team');
+    if (eb) { eb.textContent = '⚠ Could not load team data: ' + e.message; eb.style.display = 'block'; }
+  }
 }
 
 </script>
