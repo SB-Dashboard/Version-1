@@ -1161,123 +1161,186 @@ td.bold { font-weight: 600; color: var(--text); }
   <div class="g5">
     <div class="kpi k1"><div class="kpi-lbl">Total Produced</div><div class="kpi-val" id="k-prod"><div class="skel"></div></div><div class="kpi-sub">units</div></div>
     <div class="kpi k3"><div class="kpi-lbl">Total Rejected</div><div class="kpi-val" id="k-rej"><div class="skel"></div></div><div class="kpi-sub">units</div></div>
-    <div class="kpi k4"><div class="kpi-lbl">Rejection Rate</div><div class="kpi-val" id="k-rejrate"><div class="skel"></div></div><div class="kpi-sub">of total produced</div></div>
-    <div class="kpi k2"><div class="kpi-lbl">Net Good Units</div><div class="kpi-val" id="k-good"><div class="skel"></div></div><div class="kpi-sub">produced − rejected</div></div>
+    <div class="kpi k4"><div class="kpi-lbl">Rejection Rate</div><div class="kpi-val" id="k-rejrate"><div class="skel"></div></div><div class="kpi-sub">of total</div></div>
+    <div class="kpi k2"><div class="kpi-lbl">Net Good Units</div><div class="kpi-val" id="k-good"><div class="skel"></div></div><div class="kpi-sub">produced minus rejected</div></div>
     <div class="kpi k5"><div class="kpi-lbl">Active Orders</div><div class="kpi-val" id="k-orders"><div class="skel"></div></div><div class="kpi-sub">in production</div></div>
   </div>
 
-  <!-- ORDER PRODUCTION TABLE -->
-  <div class="sec">Order-wise Production</div>
-  <div class="card">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Production by Order</div>
-        <div class="card-count" id="order-count">—</div>
-      </div>
-      <input id="search-orders" placeholder="Search order, product, customer…" oninput="prodRenderOrderTable()"
-        style="background:#f7f8fa;border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-family:Arial,sans-serif;outline:none;width:260px">
+  <!-- SUB-VIEW TOGGLE + NAVIGATION -->
+  <div style="display:flex;align-items:center;gap:10px;margin:20px 0 16px;flex-wrap:wrap">
+    <div class="toggle-group">
+      <button class="toggle-btn prod-sub-toggle active" id="prod-weekly-btn" onclick="prodSetView('weekly',this)">Weekly</button>
+      <button class="toggle-btn prod-sub-toggle" id="prod-daily-btn" onclick="prodSetView('daily',this)">Daily</button>
+      <button class="toggle-btn prod-sub-toggle" id="prod-order-btn" onclick="prodSetView('order',this)">Order-wise</button>
     </div>
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Order No</th>
-        <th>Customer</th>
-        <th>Product</th>
-        <th>Order Qty</th>
-        <th>Produced</th>
-        <th>Rejected</th>
-        <th>Net Good</th>
-        <th>Rej %</th>
-        <th>Progress</th>
-        <th>Status</th>
-        <th>Machines Used</th>
-      </tr></thead>
-      <tbody id="order-tbody"><tr><td colspan="11" class="no-data">Loading…</td></tr></tbody>
-    </table>
+
+    <!-- Week navigator -->
+    <div id="prod-week-nav" style="display:flex;align-items:center;gap:6px">
+      <button onclick="prodNavWeek(-1)" style="background:#f7f8fa;border:1px solid #e5e7eb;border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">&#8592;</button>
+      <span id="prod-week-label" style="font-size:12.5px;font-weight:600;color:#111827;min-width:150px;text-align:center"></span>
+      <button onclick="prodNavWeek(1)" style="background:#f7f8fa;border:1px solid #e5e7eb;border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">&#8594;</button>
     </div>
+
+    <!-- Day navigator -->
+    <div id="prod-date-nav" style="display:none;align-items:center;gap:6px">
+      <button onclick="prodNavDate(-1)" style="background:#f7f8fa;border:1px solid #e5e7eb;border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">&#8592;</button>
+      <span id="prod-date-label" style="font-size:12.5px;font-weight:600;color:#111827;min-width:120px;text-align:center"></span>
+      <button onclick="prodNavDate(1)" style="background:#f7f8fa;border:1px solid #e5e7eb;border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">&#8594;</button>
+    </div>
+
+    <!-- Filters -->
+    <select class="fsel" id="filter-machine" onchange="prodApplyFilters()" style="margin-left:auto">
+      <option value="">All Machines</option>
+    </select>
+    <select class="fsel" id="filter-unit" onchange="prodApplyFilters()">
+      <option value="">Both Units</option>
+      <option value="Unit 1">Unit 1</option>
+      <option value="Unit 2">Unit 2</option>
+    </select>
+    <select class="fsel" id="filter-shift" onchange="prodApplyFilters()">
+      <option value="">All Shifts</option>
+      <option value="Day">Day</option>
+      <option value="Night">Night</option>
+    </select>
   </div>
 
-  <!-- PRODUCTION OVER TIME + SHIFT -->
-  <div class="g2" style="margin-top:16px">
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title" id="time-chart-title">Production Over Time</span>
-        <span class="card-count" id="time-chart-sub">—</span>
+  <!-- ═══ WEEKLY VIEW ═══ -->
+  <div id="prod-view-weekly">
+    <div class="tcard">
+      <div class="tcard-hdr">
+        <span class="tcard-title">Weekly Production by Machine</span>
+        <span class="tcard-count" id="weekly-count">-</span>
       </div>
-      <div class="time-chart" id="time-chart-wrap">
-        <div class="no-data">Loading…</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Day vs Night Shift</span></div>
-      <div class="shift-grid">
-        <div class="shift-side">
-          <div class="shift-icon">☀️</div>
-          <div class="shift-name">Day Shift</div>
-          <div class="shift-val" id="shift-day-prod">—</div>
-          <div class="shift-sub">units produced</div>
-          <div class="shift-rej" id="shift-day-rej" style="color:var(--red)">—</div>
-        </div>
-        <div class="shift-side">
-          <div class="shift-icon">🌙</div>
-          <div class="shift-name">Night Shift</div>
-          <div class="shift-val" id="shift-night-prod">—</div>
-          <div class="shift-sub">units produced</div>
-          <div class="shift-rej" id="shift-night-rej" style="color:var(--red)">—</div>
-        </div>
-      </div>
-      <div style="padding:14px 20px;border-top:1px solid #f3f4f6">
-        <div class="card-title" style="font-size:11px;margin-bottom:10px">Shift Rejection Rate Comparison</div>
-        <div id="shift-rej-bars"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MACHINE + PRODUCT -->
-  <div class="g2" style="margin-top:16px">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Machine Performance</span><span class="card-count" id="mach-count">—</span></div>
       <div style="overflow-x:auto">
       <table>
         <thead><tr>
-          <th>Machine</th>
-          <th>Unit</th>
-          <th>Produced</th>
-          <th>Rejected</th>
+          <th>Machine</th><th>Unit</th><th>Product</th><th>Order No</th>
+          <th style="text-align:right">Output</th>
+          <th style="text-align:right">Rejected</th>
+          <th style="text-align:right">Net Good</th>
           <th>Rej %</th>
-          <th>Orders</th>
-          <th>Status</th>
+          <th style="text-align:right">Runs</th>
         </tr></thead>
-        <tbody id="mach-tbody"><tr><td colspan="7" class="no-data">Loading…</td></tr></tbody>
+        <tbody id="weekly-tbody"><tr><td colspan="9" class="no-data">Loading...</td></tr></tbody>
       </table>
       </div>
     </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Product Performance</span><span class="card-count" id="prod-count">—</span></div>
+    <div class="g2" style="margin-top:16px">
+      <div class="tcard">
+        <div class="tcard-hdr"><span class="tcard-title">Output by Machine</span></div>
+        <div class="bars" id="weekly-mach-bars"><div class="no-data">Loading...</div></div>
+      </div>
+      <div class="tcard">
+        <div class="tcard-hdr"><span class="tcard-title">Day vs Night Shift</span></div>
+        <div class="shift-grid">
+          <div class="shift-side">
+            <div class="shift-icon">&#9728;&#65039;</div>
+            <div class="shift-name">Day Shift</div>
+            <div class="shift-val" id="shift-day-prod">-</div>
+            <div class="shift-sub">units produced</div>
+            <div class="shift-rej" id="shift-day-rej" style="color:#dc2626">-</div>
+          </div>
+          <div class="shift-side">
+            <div class="shift-icon">&#127769;</div>
+            <div class="shift-name">Night Shift</div>
+            <div class="shift-val" id="shift-night-prod">-</div>
+            <div class="shift-sub">units produced</div>
+            <div class="shift-rej" id="shift-night-rej" style="color:#dc2626">-</div>
+          </div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #f3f4f6">
+          <div id="shift-rej-bars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DAILY VIEW ═══ -->
+  <div id="prod-view-daily" style="display:none">
+    <div class="tcard">
+      <div class="tcard-hdr">
+        <span class="tcard-title" id="daily-view-title">Daily Production by Machine</span>
+        <span class="tcard-count" id="daily-count">-</span>
+      </div>
       <div style="overflow-x:auto">
       <table>
         <thead><tr>
-          <th>Product</th>
-          <th>Code</th>
-          <th>Produced</th>
-          <th>Rejected</th>
+          <th>Machine</th><th>Unit</th><th>Shift</th><th>Product</th><th>Order No</th>
+          <th style="text-align:right">Output</th>
+          <th style="text-align:right">Rejected</th>
+          <th style="text-align:right">Net Good</th>
           <th>Rej %</th>
         </tr></thead>
-        <tbody id="prod-tbody"><tr><td colspan="5" class="no-data">Loading…</td></tr></tbody>
+        <tbody id="daily-prod-tbody"><tr><td colspan="9" class="no-data">Select a date above</td></tr></tbody>
       </table>
       </div>
     </div>
+
+    <!-- Production Defects WIP -->
+    <div style="margin-top:16px;background:#fff;border:2px dashed #d1d5db;border-radius:8px;padding:28px;text-align:center">
+      <div style="font-size:20px;margin-bottom:8px">&#128736;&#65039;</div>
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:4px">Production Defects Analysis</div>
+      <div style="font-size:12px;color:#9ca3af">Defect type breakdown, pareto chart, trend analysis — coming soon</div>
+      <div style="display:inline-block;margin-top:10px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:3px 14px;border-radius:20px">&#9881;&#65039; Work in Progress</div>
+    </div>
   </div>
 
-  <!-- MACHINE BAR CHART -->
-  <div class="sec" style="margin-top:24px">Machine Output vs Rejection</div>
-  <div class="card">
-    <div class="card-hdr"><span class="card-title">Production & Rejection by Machine</span></div>
-    <div class="bars" id="mach-bars" style="padding:20px"></div>
+  <!-- ═══ ORDER-WISE VIEW ═══ -->
+  <div id="prod-view-order" style="display:none">
+    <div class="tcard">
+      <div class="tcard-hdr">
+        <div>
+          <span class="tcard-title">Production by Order</span>
+          <span class="tcard-count" id="order-count">-</span>
+        </div>
+        <input id="search-orders" placeholder="Search order, product, customer..." oninput="prodRenderOrderTable()"
+          style="background:#f7f8fa;border:1px solid #e5e7eb;color:#111827;padding:7px 12px;border-radius:6px;font-size:12px;font-family:Arial,sans-serif;outline:none;width:240px">
+      </div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Order No</th><th>Customer</th><th>Product</th>
+          <th style="text-align:right">Order Qty</th>
+          <th style="text-align:right">Produced</th>
+          <th style="text-align:right">Rejected</th>
+          <th style="text-align:right">Net Good</th>
+          <th>Rej %</th><th>Progress</th><th>Status</th><th>Machines</th>
+        </tr></thead>
+        <tbody id="order-tbody"><tr><td colspan="11" class="no-data">Loading...</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-top:16px">
+      <div class="tcard">
+        <div class="tcard-hdr"><span class="tcard-title">Machine Performance</span><span class="tcard-count" id="mach-count">-</span></div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Machine</th><th>Unit</th><th style="text-align:right">Produced</th><th style="text-align:right">Rejected</th><th>Rej %</th><th style="text-align:right">Orders</th><th>Status</th></tr></thead>
+          <tbody id="mach-tbody"><tr><td colspan="7" class="no-data">Loading...</td></tr></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="tcard-hdr"><span class="tcard-title">Product Performance</span><span class="tcard-count" id="prod-count">-</span></div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Product</th><th>Code</th><th style="text-align:right">Produced</th><th style="text-align:right">Rejected</th><th>Rej %</th></tr></thead>
+          <tbody id="prod-tbody"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" style="margin-top:24px">Machine Output vs Rejection</div>
+    <div class="tcard">
+      <div class="tcard-hdr"><span class="tcard-title">Production and Rejection by Machine</span></div>
+      <div class="bars" id="mach-bars" style="padding:20px"></div>
+    </div>
   </div>
 
 </div>
-</div>
+
 
 <!-- ══════════════════════════════════════════════════════
      TAB 8 — TEAM ACCOUNTABILITY
@@ -2666,6 +2729,9 @@ async function loadProductionData() {
     if (sel_m) sel_m.innerHTML = '<option value="">All Machines</option>' + machines.map(m=>`<option value="${m}">${m}</option>`).join('');
 
     prodApplyFilters();
+  // Default to weekly view
+  prodCurrentWeekStart = prodGetWeekStart(new Date());
+  prodSetView('weekly', document.getElementById('prod-weekly-btn'));
   } catch(e) {
     console.error('Production load error:', e);
     const eb = $('err-prod');
@@ -2686,7 +2752,9 @@ function prodApplyFilters() {
     if (unit  && r['Unit']     !== unit)  return false;
     return true;
   });
-  prodRenderAll();
+  if (prodView === 'weekly') prodRenderWeekly();
+  else if (prodView === 'daily') prodRenderDaily();
+  else prodRenderAll();
 }
 
 function prodSetTimeView(view, btn) {
@@ -3358,6 +3426,214 @@ async function loadTeamData() {
     const eb = document.getElementById('err-team');
     if (eb) { eb.textContent = '⚠ Could not load team data: ' + e.message; eb.style.display = 'block'; }
   }
+}
+
+
+// ══════════════════════════════════════════════════════
+// PRODUCTION SUB-VIEWS: Weekly / Daily / Order-wise
+// ══════════════════════════════════════════════════════
+let prodView = 'weekly';
+let prodCurrentDate = new Date();
+let prodCurrentWeekStart = null;
+
+function prodGetWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  // Week starts Monday
+  const diff = (day === 0) ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function prodGetWeekEnd(weekStart) {
+  const d = new Date(weekStart);
+  d.setDate(d.getDate() + 6);
+  return d;
+}
+
+function prodFmtDate(d) {
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function prodSetView(view, btn) {
+  prodView = view;
+  document.querySelectorAll('.prod-sub-toggle').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  // Show/hide views
+  const views = ['weekly', 'daily', 'order'];
+  views.forEach(v => {
+    const el = document.getElementById('prod-view-' + v);
+    if (el) el.style.display = v === view ? 'block' : 'none';
+  });
+
+  // Show/hide navigators
+  const weekNav = document.getElementById('prod-week-nav');
+  const dateNav = document.getElementById('prod-date-nav');
+  if (weekNav) weekNav.style.display = view === 'weekly' ? 'flex' : 'none';
+  if (dateNav) dateNav.style.display = view === 'daily' ? 'flex' : 'none';
+
+  if (view === 'weekly') prodRenderWeekly();
+  else if (view === 'daily') prodRenderDaily();
+  else if (view === 'order') prodRenderAll();
+}
+
+function prodNavWeek(dir) {
+  if (!prodCurrentWeekStart) prodCurrentWeekStart = prodGetWeekStart(new Date());
+  prodCurrentWeekStart.setDate(prodCurrentWeekStart.getDate() + dir * 7);
+  prodRenderWeekly();
+}
+
+function prodNavDate(dir) {
+  prodCurrentDate.setDate(prodCurrentDate.getDate() + dir);
+  // Skip Sundays
+  while (prodCurrentDate.getDay() === 0) {
+    prodCurrentDate.setDate(prodCurrentDate.getDate() + dir);
+  }
+  prodRenderDaily();
+}
+
+// ── WEEKLY RENDER ──
+function prodRenderWeekly() {
+  if (!prodCurrentWeekStart) prodCurrentWeekStart = prodGetWeekStart(new Date());
+  const weekEnd = prodGetWeekEnd(prodCurrentWeekStart);
+
+  // Update label
+  const lbl = document.getElementById('prod-week-label');
+  if (lbl) lbl.textContent = prodFmtDate(prodCurrentWeekStart) + ' - ' + prodFmtDate(weekEnd);
+
+  const p = prodFiltered.filter(r => {
+    const dt = new Date(r['Date'] || '');
+    return !isNaN(dt) && dt >= prodCurrentWeekStart && dt <= weekEnd;
+  });
+
+  // Aggregate by machine + product + order
+  const rows = {};
+  p.forEach(r => {
+    const key = (r['Machine']||'') + '||' + (r['Product Name']||r['Product Code']||'') + '||' + (r['Order No']||'');
+    if (!rows[key]) {
+      rows[key] = {
+        machine: r['Machine'] || '-',
+        unit: r['Unit'] || '-',
+        product: r['Product Name'] || r['Product Code'] || '-',
+        orderNo: r['Order No'] || '-',
+        prod: 0, rej: 0, runs: 0
+      };
+    }
+    rows[key].prod += parseFloat(r['Production']) || 0;
+    rows[key].rej  += parseFloat(r['Rejection']) || 0;
+    rows[key].runs++;
+  });
+
+  const rowArr = Object.values(rows).sort((a,b) => b.prod - a.prod);
+  const cnt = document.getElementById('weekly-count');
+  if (cnt) cnt.textContent = rowArr.length + ' rows';
+
+  const tbody = document.getElementById('weekly-tbody');
+  if (!tbody) return;
+
+  if (rowArr.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="no-data">No production data for this week</td></tr>';
+  } else {
+    tbody.innerHTML = rowArr.map(r => {
+      const net = r.prod - r.rej;
+      const rr = r.prod ? (r.rej / r.prod * 100) : 0;
+      const rpill = rr >= 5
+        ? `<span class="pill pill-fail">${rr.toFixed(1)}%</span>`
+        : rr >= 2
+          ? `<span class="pill pill-hold">${rr.toFixed(1)}%</span>`
+          : `<span class="pill pill-pass">${rr.toFixed(1)}%</span>`;
+      return `<tr>
+        <td class="bold">${r.machine}</td>
+        <td><span class="pill ${r.unit==='Unit 1'?'pill-open':'pill-dispatch'}">${r.unit}</span></td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.product}">${r.product}</td>
+        <td class="mono">${r.orderNo}</td>
+        <td style="text-align:right;font-weight:600">${r.prod.toLocaleString('en-IN')}</td>
+        <td style="text-align:right;color:#dc2626">${r.rej.toLocaleString('en-IN')}</td>
+        <td style="text-align:right;color:#16a34a">${net.toLocaleString('en-IN')}</td>
+        <td>${rpill}</td>
+        <td style="text-align:right;color:#9ca3af">${r.runs}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Weekly machine bar chart
+  const machMap = {};
+  rowArr.forEach(r => {
+    const k = r.machine;
+    if (!machMap[k]) machMap[k] = 0;
+    machMap[k] += r.prod;
+  });
+  const barData = Object.entries(machMap).sort((a,b)=>b[1]-a[1]).map(([lbl,val])=>({lbl,val}));
+  barChart('weekly-mach-bars', barData, 'gold');
+
+  // Shift totals for week
+  prodRenderShift(p);
+}
+
+// ── DAILY RENDER ──
+function prodRenderDaily() {
+  const dateStr = prodCurrentDate.toISOString().slice(0, 10);
+  const lbl = document.getElementById('prod-date-label');
+  if (lbl) lbl.textContent = prodFmtDate(prodCurrentDate);
+
+  const title = document.getElementById('daily-view-title');
+  if (title) title.textContent = 'Daily Production — ' + prodFmtDate(prodCurrentDate);
+
+  const p = prodFiltered.filter(r => {
+    const ds = r['Date'] || '';
+    // Match date string regardless of format
+    const dt = new Date(ds);
+    if (isNaN(dt)) return false;
+    return dt.toISOString().slice(0,10) === dateStr;
+  });
+
+  const cnt = document.getElementById('daily-count');
+  if (cnt) cnt.textContent = p.length + ' runs';
+
+  const tbody = document.getElementById('daily-prod-tbody');
+  if (!tbody) return;
+
+  if (p.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="no-data">No production data for ' + prodFmtDate(prodCurrentDate) + '</td></tr>';
+    return;
+  }
+
+  // Sort by machine then shift
+  const sorted = [...p].sort((a,b) => {
+    const ma = (a['Machine']||''), mb = (b['Machine']||'');
+    if (ma !== mb) return ma.localeCompare(mb);
+    return (a['Shift']||'').localeCompare(b['Shift']||'');
+  });
+
+  tbody.innerHTML = sorted.map(r => {
+    const prod = parseFloat(r['Production']) || 0;
+    const rej  = parseFloat(r['Rejection'])  || 0;
+    const net  = prod - rej;
+    const rr   = prod ? (rej / prod * 100) : 0;
+    const rpill = rr >= 5
+      ? `<span class="pill pill-fail">${rr.toFixed(1)}%</span>`
+      : rr >= 2
+        ? `<span class="pill pill-hold">${rr.toFixed(1)}%</span>`
+        : prod === 0
+          ? `<span class="pill" style="background:#f3f4f6;color:#9ca3af">-</span>`
+          : `<span class="pill pill-pass">${rr.toFixed(1)}%</span>`;
+    const shiftPill = r['Shift'] === 'Day'
+      ? `<span class="pill pill-open">Day</span>`
+      : `<span class="pill pill-dispatch">Night</span>`;
+    return `<tr>
+      <td class="bold">${r['Machine'] || '-'}</td>
+      <td><span class="pill ${(r['Unit']||'')==='Unit 1'?'pill-open':'pill-dispatch'}">${r['Unit']||'-'}</span></td>
+      <td>${shiftPill}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r['Product Name']||''}">${r['Product Name'] || r['Product Code'] || '-'}</td>
+      <td class="mono">${r['Order No'] || '-'}</td>
+      <td style="text-align:right;font-weight:600;${prod===0?'color:#9ca3af':''}">${prod > 0 ? prod.toLocaleString('en-IN') : '-'}</td>
+      <td style="text-align:right;color:#dc2626">${rej > 0 ? rej.toLocaleString('en-IN') : '-'}</td>
+      <td style="text-align:right;color:#16a34a">${prod > 0 ? net.toLocaleString('en-IN') : '-'}</td>
+      <td>${rpill}</td>
+    </tr>`;
+  }).join('');
 }
 
 </script>
